@@ -1,2 +1,3 @@
 # firmament
-NodeJS script and Docker files to create MySQL/MongoDB backed AngularJS/Bootstrap web application
+Perl and bash scripts to create cooperative database and web server docker containers.
+Perl and bash scripts to create cooperative database and web server docker containers.
