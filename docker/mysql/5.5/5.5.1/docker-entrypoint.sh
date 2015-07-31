@@ -96,6 +96,4 @@ if [ "$1" = 'mysqld' ]; then
 	chown -R mysql:mysql "$DATADIR"
 fi
 
-(sleep 5; /usr/bin/perl /sotera-db-oneshot.pl) &
-
 exec "$@"

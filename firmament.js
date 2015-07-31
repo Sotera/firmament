@@ -87,7 +87,7 @@ function getDockerContainerConfigTemplate() {
     },
     {
       name: 'mysql',
-      Image: 'jreeme/mysql:5.5.2',
+      Image: 'jreeme/mysql:5.5.3',
       DockerFilePath: 'docker/mysql/5.5',
       Env: ['MYSQL_ROOT_PASSWORD=root'],
       Hostname: 'mysql',
