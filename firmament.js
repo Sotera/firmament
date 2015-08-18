@@ -1,30 +1,24 @@
 #!/usr/local/bin/node
-
 start();
-
 function start() {
   assignStaticGlobals();
   require_ResolveModuleDependencies(function () {
     requireCache('wait.for').launchFiber(fiberWrapper);
   });
 }
-
 function fiberWrapper() {
   util_SetupConsoleTable();
   commander_CreateCommanderCommandMap();
   util_EnterUnhandledExceptionWrapper(commander_Configure);
 }
-
 function assignStaticGlobals() {
   global.VERSION = '0.0.3';
   global.configFileFolder = '.';
   global.configFilename = 'firmament.json';
   global.require_Cache = {};
   global.firmamentEmitter = new (requireCache('events'))();
-
   global.slowToLoadModuleDependencies = {
     "command-line-args": "0.5.9",
-    "nodegit": "0.4.0",
     "commander": "2.8.1",
     "jsonfile": "2.0.0",
     "terminal-colors": "0.1.3",
@@ -37,7 +31,6 @@ function assignStaticGlobals() {
     "easy-table": "0.3.0",
     "util": "0.10.3"
   };
-
   global.moduleDependencies = {
     "progress": "1.1.8",
     "dockerode": "2.1.4",
@@ -49,7 +42,6 @@ function assignStaticGlobals() {
     "tar-fs": "1.5.1",
     "fibers": "1.0.5"
   };
-
   global.ROOT_docker_Desc = 'Issue Docker commands to local or remote Docker server';
   global.ROOT_init_Desc = 'Download all node modules needed for every operation. Otherwise they come down when needed.';
   global.ROOT_make_Desc = 'Issue make commands to build and deploy Docker containers';
@@ -76,7 +68,6 @@ function assignStaticGlobals() {
   global.MAKE_template_full_Desc = 'Write full container descriptor (quite large)';
   global.MAKE_template_file_Desc = 'Name of file to write makefile template to';
 }
-
 function getDockerContainerConfigTemplate() {
   return [
     {
@@ -115,7 +106,7 @@ function getDockerContainerConfigTemplate() {
         '3001/tcp': {}
       },
       HostConfig: {
-        Links: ['mongo:mongo','mysql:mysql'],
+        Links: ['mongo:mongo', 'mysql:mysql'],
         PortBindings: {
           '3001/tcp': [{HostPort: '3001'}],
           '8701/tcp': [{HostPort: '8701'}]
@@ -124,7 +115,8 @@ function getDockerContainerConfigTemplate() {
       ExpressApps: [
         {
           GitUrl: 'https://github.com/Sotera/DatawakeManager-Loopback',
-          GitBranchName: 'deploy',
+          GitSrcBranchName: 'master',
+          StrongLoopBranchName: 'deploy',
           StrongLoopServerUrl: 'http://localhost:8701',
           ServiceName: 'DatawakeManager-Loopback'
         }
@@ -149,14 +141,15 @@ function getDockerContainerConfigTemplate() {
       ExpressApps: [
         {
           GitUrl: 'https://github.com/Sotera/DatawakeManager-WebApp',
-          GitBranchName: 'deploy',
+          GitSrcBranchName: 'master',
+          StrongLoopBranchName: 'deploy',
           StrongLoopServerUrl: 'http://localhost:8702',
           ServiceName: 'DatawakeManager-WebApp',
           Scripts: [
             {
               RelativeWorkingDir: '.',
               Command: 'bower',
-              Args: ['install','--config.interactive=false']
+              Args: ['install', '--config.interactive=false']
             }
           ]
         }
@@ -171,7 +164,7 @@ function getDockerContainerConfigTemplate() {
         '80/tcp': {}
       },
       HostConfig: {
-        Links: ['mysql:mysql','loopback:loopback'],
+        Links: ['mysql:mysql', 'loopback:loopback'],
         PortBindings: {
           '80/tcp': [{HostPort: '80'}]
         }
@@ -179,7 +172,6 @@ function getDockerContainerConfigTemplate() {
     }
   ];
 }
-
 function getDockerContainerDefaultDescriptor() {
   return {
     Image: '',
@@ -242,7 +234,6 @@ function getDockerContainerDefaultDescriptor() {
     }
   };
 }
-
 //vvvv--> Configure CLI & Commander (Add commands & so forth)
 function commander_CreateCommanderCommandMap() {
   var deepExtend = requireCache('deep-extend');
@@ -332,7 +323,6 @@ function commander_CreateCommanderCommandMap() {
   }
   deepExtend(global.commander_CommandMap, commanderByAliasMap);
 }
-
 function cli_Enter(cmd) {
   //The 'invoke' callbacks in the CLI come from the great beyond somewhere and most definitely
   //not from within a fiber so all our 'wait.for's break unless we spin up a fiber to handle them
@@ -546,9 +536,7 @@ function cli_Enter(cmd) {
   cli_CorporalLoop(cmd, commands);
   return 0;
 }
-
 //^^^^--> Configure CLI & Commander (Add commands & so forth)
-
 //Docker Command Handlers
 function docker_ShellIntoContainerByFirmamentId(ID) {
   var wait = requireCache('wait.for');
@@ -565,12 +553,10 @@ function docker_ShellIntoContainerByFirmamentId(ID) {
     return {Error: ex};
   }
 }
-
 function docker_PS(options) {
   var wait = requireCache('wait.for');
   return wait.for(docker_ScopePuppy, 'listContainers', {all: options.all});
 }
-
 //Any 'requireCache()' calls in docker_ScopePuppy must exist in global.moduleDependencies
 function docker_ScopePuppy(fnName, options, callback) {
   if (!global.docker) {
@@ -587,7 +573,7 @@ function docker_ScopePuppy(fnName, options, callback) {
       //Check existence of Docker directory
       var fs = requireCache('fs');
       fs.statSync(dockerFilePath);
-    }catch(ex){
+    } catch (ex) {
       callback(ex, {Message: "DockerFilePath '" + dockerFilePath + "' does not exist."});
       return;
     }
@@ -633,9 +619,9 @@ function docker_ScopePuppy(fnName, options, callback) {
           if (options.data && options.data.error) {
             //A sad little hack to not stop processing on the 'tag not found error'. We'll do
             //this better next time.
-            if(options.data.error.indexOf('not found in repository') == -1){
+            if (options.data.error.indexOf('not found in repository') == -1) {
               callback(options.data, {Message: "Error building: '" + options.Image + "'."});
-            }else{
+            } else {
               callback(null, {Message: "Image: '" + options.Image + "' built."});
             }
           } else {
@@ -710,7 +696,6 @@ function docker_ScopePuppy(fnName, options, callback) {
     var container = global.docker.getContainer(options.id);
     if (!container.id) {
       callback({Message: 'No such container'}, null);
-
     } else if (fnName === 'startOrStopContainer') {
       options.start ? container.start(callback) : container.stop(callback);
     } else if (fnName === 'removeContainer') {
@@ -721,7 +706,6 @@ function docker_ScopePuppy(fnName, options, callback) {
     }
   }
 }
-
 function docker_PrettyPrintDockerContainerList(containers, noprint, all) {
   console.log('');//Line feed
   if (!containers || !containers.length) {
@@ -730,7 +714,6 @@ function docker_PrettyPrintDockerContainerList(containers, noprint, all) {
     }
     return [];
   }
-
   containers.sort(function (a, b) {
     return (a.Id < b.Id) ? -1 : 1
   });
@@ -752,15 +735,12 @@ function docker_PrettyPrintDockerContainerList(containers, noprint, all) {
   }
   return displayContainers;
 }
-
 function docker_CreateContainer(containerConfig) {
   var deepExtend = requireCache('deep-extend');
   var wait = requireCache('wait.for');
-
   var fullContainerConfigCopy = {};
   deepExtend(fullContainerConfigCopy, getDockerContainerDefaultDescriptor());
   deepExtend(fullContainerConfigCopy, containerConfig);
-
   try {
     var result = wait.for(docker_ScopePuppy, 'createContainer', fullContainerConfigCopy);
     return {Message: "Container '" + fullContainerConfigCopy.name + "' created (Id: " + result.id.substring(1, 12) + ")"};
@@ -772,7 +752,7 @@ function docker_CreateContainer(containerConfig) {
       console.log("Attempting to pull from: 'hub.docker.com' ...");
       try {
         var result = wait.for(docker_ScopePuppy, 'pullImage', fullContainerConfigCopy);
-        if(result && result.Message){
+        if (result && result.Message) {
           console.log(result.Message);
         }
         return docker_CreateContainer(containerConfig);
@@ -787,7 +767,7 @@ function docker_CreateContainer(containerConfig) {
           console.log("Container '" + fullContainerConfigCopy.name + "' built.");
           return docker_CreateContainer(containerConfig);
         } catch (ex) {
-          if(ex.error){
+          if (ex.error) {
             return {error: ex, Message: 'Error'};
           }
           return {Message: "Unable to build from Docker file at '" + fullContainerConfigCopy.DockerFilePath + "'"};
@@ -798,7 +778,6 @@ function docker_CreateContainer(containerConfig) {
     }
   }
 }
-
 //Remove containers
 function docker_RemoveContainersByFirmamentIds(IDs) {
   var containers = docker_PS({all: true});
@@ -808,13 +787,11 @@ function docker_RemoveContainersByFirmamentIds(IDs) {
     console.log(docker_RemoveContainerByName(containerName, containers).Message);
   });
 }
-
 function docker_RemoveContainerByName(containerName, containers) {
   var dockerId = docker_GetContainerDockerIdByName(containerName, containers);
   var result = docker_RemoveContainerByDockerId(dockerId);
   return {Message: "Container: '" + containerName + "' " + result.Message, Error: result.Error};
 }
-
 function docker_RemoveContainerByDockerId(dockerId) {
   var idMessage = ': (Id: <unknown>)';
   try {
@@ -827,7 +804,6 @@ function docker_RemoveContainerByDockerId(dockerId) {
     return {Message: message, Error: ex};
   }
 }
-
 //Start/Stop containers
 function docker_StartOrStopContainersByFirmamentIds(IDs, start) {
   var containers = docker_PS({all: start});
@@ -837,13 +813,11 @@ function docker_StartOrStopContainersByFirmamentIds(IDs, start) {
     console.log(docker_StartOrStopContainerByName(containerName, containers, start).Message);
   });
 }
-
 function docker_StartOrStopContainerByName(containerName, containers, start) {
   var dockerId = docker_GetContainerDockerIdByName(containerName, containers);
   var result = docker_StartOrStopContainerByDockerId(dockerId, start);
   return {Message: "Container: '" + containerName + "' " + result.Message, Error: result.Error};
 }
-
 function docker_StartOrStopContainerByDockerId(dockerId, start) {
   var idMessage = ': (Id: <unknown>)';
   try {
@@ -857,7 +831,6 @@ function docker_StartOrStopContainerByDockerId(dockerId, start) {
     return {Message: message, Error: ex};
   }
 }
-
 //Container ID cross reference helpers
 function docker_GetContainerDockerIdByName(containerName, containers) {
   //Brute force is fun!
@@ -871,12 +844,10 @@ function docker_GetContainerDockerIdByName(containerName, containers) {
   var message = 'Container does not exist.';
   util_LogError({Message: message});
 }
-
 /*function docker_GetContainerDockerIdByFirmamentId(firmamentId, containers) {
  var containerName = docker_GetContainerNameByFirmamentId(firmamentId, containers);
  return docker_GetContainerDockerIdByName(containerName, containers);
  }*/
-
 function docker_GetContainerNamesByFirmamentIds(firmamentIds, containers) {
   var containerNames = [];
   firmamentIds.forEach(function (firmamentId) {
@@ -884,7 +855,6 @@ function docker_GetContainerNamesByFirmamentIds(firmamentIds, containers) {
   });
   return containerNames;
 }
-
 function docker_GetContainerNameByFirmamentId(firmamentId, containers) {
   var displayContainers = docker_PrettyPrintDockerContainerList(containers, true);
   for (var i = 0; i < displayContainers.length; ++i) {
@@ -893,54 +863,45 @@ function docker_GetContainerNameByFirmamentId(firmamentId, containers) {
     }
   }
 }
-
 //Make Command Handlers
 function make_ProcessContainerConfigs(containerConfigs) {
   var sortedContainerConfigs = util_ContainerDependencySort(containerConfigs);
   var wait = requireCache('wait.for');
-
   sortedContainerConfigs.forEach(function (containerConfig) {
     console.log("Removing old Docker container: '" + containerConfig.name + "'");
     var result = docker_RemoveContainerByName('/' + containerConfig.name, docker_PS({all: true}));
     console.log(result.Message);
   });
-
   sortedContainerConfigs.forEach(function (containerConfig) {
     console.log("Creating Docker container: '" + containerConfig.name + "'");
     var result = docker_CreateContainer(containerConfig);
-    if(result.error){
+    if (result.error) {
       util_Fatal(result.error);
     }
     console.log(result.Message);
   });
-
   var containers = docker_PS({all: true});
   docker_PrettyPrintDockerContainerList(containers, false, true);
-
   //Start the containers
   sortedContainerConfigs.forEach(function (containerConfig) {
     console.log(docker_StartOrStopContainerByName('/' + containerConfig.name, containers, true).Message);
   });
-
   docker_PrettyPrintDockerContainerList(docker_PS({all: false}), false, false);
-
   //Deploy the Express applications
   var cwd = process.cwd();
   sortedContainerConfigs.forEach(function (containerConfig) {
     if (!containerConfig.ExpressApps) {
       return;
     }
-
     containerConfig.ExpressApps.forEach(function (expressApp) {
       try {
         expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
-        wait.for(make_GitClone, expressApp.GitUrl, expressApp.GitCloneFolder);
+        wait.for(make_GitClone, expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder);
         wait.for(make_ExecuteExpressAppBuildScripts, expressApp);
       } catch (ex) {
-        util_LogError(ex);
+        util_Fatal(ex);
       }
     });
-
     containerConfig.ExpressApps.forEach(function (expressApp) {
       //At this time (11-JUN-2015) running scripts in npm package.json files blows slc deployment
       //(the app uploads but is not startable) when running a 'prepublish:' bower script. Since
@@ -951,24 +912,21 @@ function make_ProcessContainerConfigs(containerConfigs) {
       argv.unshift(process.argv[0]);
       wait.for(make_StrongBuild, argv, expressApp.GitCloneFolder);
     });
-
     containerConfig.ExpressApps.forEach(function (expressApp) {
       var strongLoopServerUrl = expressApp.StrongLoopServerUrl || 'http://localhost:8701';
       var url = requireCache('url');
       var path = requireCache('path');
       var serviceName = expressApp.ServiceName || path.basename(url.parse(expressApp.GitUrl).path);
-      var gitBranchName = expressApp.GitBranchName || 'deploy';
-      wait.for(make_StrongDeploy, expressApp.GitCloneFolder, strongLoopServerUrl, serviceName, gitBranchName);
+      var strongLoopBranchName = expressApp.StrongLoopBranchName || 'deploy';
+      wait.for(make_StrongDeploy, expressApp.GitCloneFolder, strongLoopServerUrl, serviceName, strongLoopBranchName);
     });
   });
 }
-
 function make_ExecuteExpressAppBuildScripts(expressApp, callback) {
   if (!expressApp.Scripts) {
     callback(null, null);
     return;
   }
-
   expressApp.Scripts.forEach(function (script) {
     try {
       var spawnResult = requireCache('child_process').spawnSync(script.Command, script.Args, {
@@ -980,23 +938,16 @@ function make_ExecuteExpressAppBuildScripts(expressApp, callback) {
       util_LogError(ex);
     }
   });
-
   callback(null, null);
 }
-
-function make_GitClone(gitUrl, localFolder, callback) {
-  var nodeGit = requireCache('nodegit');
-  nodeGit.Clone(gitUrl, localFolder)
-    .then(function (repo) {
-      try {
-        console.log("git clone: '" + gitUrl + "' -> '" + localFolder + "'");
-        callback(null, null);
-      } catch (ex) {
-        util_LogError(ex);
-      }
-    });
+function make_GitClone(gitUrl, gitBranch, localFolder, callback) {
+  var child = requireCache('child_process').spawn('git', ['clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], {
+    stdio: 'inherit'
+  });
+  child.on('exit', function (err, code) {
+    callback(err, code);
+  });
 }
-
 function make_StrongBuild(argv, gitCloneFolder, callback) {
   var strongBuild = requireCache('strong-build');
   process.chdir(gitCloneFolder);
@@ -1005,13 +956,11 @@ function make_StrongBuild(argv, gitCloneFolder, callback) {
     callback(null, null);
   });
 }
-
 function make_StrongDeploy(cwd, strongLoopServerUrl, serviceName, gitBranchName) {
   var strongDeploy = requireCache('strong-deploy');
   var wait = requireCache('wait.for');
   return wait.for(strongDeploy, cwd, strongLoopServerUrl, serviceName, gitBranchName);
 }
-
 function make_BUILD(filename, options, callback) {
   var fs = requireCache('fs');
   var path = requireCache('path');
@@ -1025,7 +974,6 @@ function make_BUILD(filename, options, callback) {
     callback();
   }
 }
-
 function make_TEMPLATE(filename, options, callback) {
   console.log("\nCreating JSON template file '" + filename + "' ...");
   var fs = requireCache('fs');
@@ -1044,7 +992,6 @@ function make_TEMPLATE(filename, options, callback) {
     util_WriteTemplateFile(filename, options.full, callback);
   }
 }
-
 //Corporal CLI helpers
 function cli_CorporalLoop(cmd, commands) {
   var Corporal = requireCache('corporal');
@@ -1057,7 +1004,6 @@ function cli_CorporalLoop(cmd, commands) {
   });
   corporal.on('load', corporal.loop);
 }
-
 function cli_GetOptionsAndUsage(argArray, args, usageConfig) {
   usageConfig = usageConfig || {};
   var cliArgs = requireCache('command-line-args');
@@ -1075,7 +1021,6 @@ function cli_GetOptionsAndUsage(argArray, args, usageConfig) {
   var usage = cli.getUsage(usageConfig);
   return {options: options, usage: usage};
 }
-
 //Commander helpers
 function commander_TestCommandLineArgs(args) {
   //Here we just make sure switches are contiguous (not broken up by args)
@@ -1094,26 +1039,21 @@ function commander_TestCommandLineArgs(args) {
     }
   }
 }
-
 function commander_LoadRootCommand(commander) {
   global.commander_CommandMap['root'](commander);
   commander.parse(process.argv);
 }
-
 function commander_OutputTopLevelHelp(commander) {
   commander_LoadRootCommand(commander);
   commander.help();
 }
-
 function commander_Configure() {
   var path = requireCache('path');
   var commander = requireCache('commander');
   var nodePath = process.argv[0];
   var scriptPath = process.argv[1];
   var cmdArray = process.argv.slice(2);
-
   commander_TestCommandLineArgs(cmdArray);
-
   switch (cmdArray.length) {
     case(0):
       //$ firmament with no arguments
@@ -1145,13 +1085,11 @@ function commander_Configure() {
       break;
   }
 }
-
 //Module resolution (get what we need from NPM)
 function requireCache(moduleName) {
   if (global.require_Cache[moduleName]) {
     return global.require_Cache[moduleName];
   }
-
   try {
     return global.require_Cache[moduleName] = require(moduleName);
   } catch (ex) {
@@ -1159,16 +1097,12 @@ function requireCache(moduleName) {
       util_Fatal(ex);
     }
   }
-
   console.log("Looking for '" + moduleName + "' in dependency list ...");
   var version = global.slowToLoadModuleDependencies[moduleName];
   var modulesToDownload = [version && version.length ? moduleName + '@' + version : moduleName];
-
   requireCache('wait.for').for(require_NpmInstall, modulesToDownload);
-
   return global.require_Cache[moduleName] = require(moduleName);
 }
-
 function require_NpmInstall(modulesToDownload, callback) {
   if (!modulesToDownload || !modulesToDownload.length) {
     callback({Message: 'require_NpmInstall() called with no modules to install'});
@@ -1189,7 +1123,6 @@ function require_NpmInstall(modulesToDownload, callback) {
     require_InstallNodeModules(npm, modulesToDownload, callback);
   }
 }
-
 function require_InstallNodeModules(npm, modulesToDownload, callback) {
   npm.commands.install(modulesToDownload, function (err, data) {
     if (err) {
@@ -1199,10 +1132,8 @@ function require_InstallNodeModules(npm, modulesToDownload, callback) {
     callback(err, data);
   });
 }
-
 function require_ResolveModuleDependencies(callback) {
   var modulesToDownload = [];
-
   for (var key in global.moduleDependencies) {
     try {
       global.require_Cache[key] = require(key);
@@ -1213,15 +1144,12 @@ function require_ResolveModuleDependencies(callback) {
       modulesToDownload.push(key + '@' + global.moduleDependencies[key]);
     }
   }
-
   if (modulesToDownload.length) {
     console.log("\nLooks like we're a few bricks short of a load!");
     console.log("\nI'll try to find what we're missing (could take a couple of minutes) ...\n");
     console.log(modulesToDownload);
-
     var childProcess = require('child_process');
     var childProcessOutput = childProcess.execSync('npm root -g', {encoding: 'utf8', stdio: 'pipe'});
-
     childProcessOutput = childProcessOutput.replace(/\n$/, '');
     var npm = require(childProcessOutput + '/npm');
     npm.load({loaded: false}, function (err) {
@@ -1246,14 +1174,12 @@ function require_ResolveModuleDependencies(callback) {
     callback();
   }
 }
-
 //Uncategorized utility functions
 function util_WriteJsonObjectToFile(path, obj, callback) {
   var jsonFile = requireCache('jsonfile');
   jsonFile.spaces = 2;
   jsonFile.writeFile(path, obj, callback);
 }
-
 function util_ContainerDependencySort(containerConfigs) {
   var sortedContainerConfigs = [];
   //Sort on linked container dependencies
@@ -1279,11 +1205,9 @@ function util_ContainerDependencySort(containerConfigs) {
   });
   return sortedContainerConfigs;
 }
-
 function util_TopologicalDependencySort(graph) {
   var sorted = [], // sorted list of IDs ( returned value )
     visited = {}; // hash: id of already visited node => true
-
   // 2. topological sort
   try {
     Object.keys(graph).forEach(function visit(name, ancestors) {
@@ -1291,22 +1215,18 @@ function util_TopologicalDependencySort(graph) {
       if (visited[name]) {
         return
       }
-
       if (!Array.isArray(ancestors)) {
         ancestors = []
       }
       ancestors.push(name);
       visited[name] = true;
-
       var deps = graph[name];
       deps.forEach(function (dep) {
         if (ancestors.indexOf(dep) >= 0) {
           util_Fatal({Message: 'Circular dependency "' + dep + '" is required by "' + name + '": ' + ancestors.join(' -> ')});
         }
-
         visit(dep, ancestors.slice(0)); // recursive call
       });
-
       sorted.push(name);
     });
   } catch (ex) {
@@ -1314,7 +1234,6 @@ function util_TopologicalDependencySort(graph) {
   }
   return sorted;
 }
-
 function util_EnterUnhandledExceptionWrapper(fn) {
   try {
     fn();
@@ -1322,18 +1241,15 @@ function util_EnterUnhandledExceptionWrapper(fn) {
     util_Fatal(ex);
   }
 }
-
 function util_Exit(err, code) {
   util_LogError(err);
   process.exit(err ? code || -1 : code);
 }
-
 function util_Fatal(ex) {
   console.log("\nMan, sorry. Something bad happened and I can't continue. :(");
   console.log("\nHere's all I know:\n");
   util_Exit(ex);
 }
-
 function util_LogError(err) {
   if (err) {
     console.log(err);
@@ -1342,7 +1258,6 @@ function util_LogError(err) {
   }
   return false;
 }
-
 function util_SetupConsoleTable() {
   if (typeof console === 'undefined') {
     throw new Error('Weird, console object is undefined');
@@ -1350,7 +1265,6 @@ function util_SetupConsoleTable() {
   if (typeof console.table === 'function') {
     return;
   }
-
   var table = requireCache('easy-table');
 
   function arrayToString(arr) {
@@ -1403,11 +1317,9 @@ function util_SetupConsoleTable() {
 
   console.table = function () {
     var args = Array.prototype.slice.call(arguments);
-
     if (args.length === 2 &&
       typeof args[0] === 'string' &&
       Array.isArray(args[1])) {
-
       return printTitleTable(args[0], args[1]);
     }
     args.forEach(function (k) {
@@ -1421,12 +1333,10 @@ function util_SetupConsoleTable() {
     });
   };
 }
-
 function util_WriteTemplateFile(templateFilename, full, callback) {
   var objectToWrite = full ? [getDockerContainerDefaultDescriptor()] : getDockerContainerConfigTemplate();
   util_WriteJsonObjectToFile(templateFilename, objectToWrite, callback);
 }
-
 function util_CallFunctionInFiber(fn, args, callback) {
   var wait = requireCache('wait.for');
   var eventName = ((new Date()).getTime()).toString();
@@ -1440,7 +1350,6 @@ function util_CallFunctionInFiber(fn, args, callback) {
     }, args, callback);
   }).emit(eventName, args, callback);
 }
-
 function util_Int32FromBytes(x) {
   var val = 0;
   for (var i = 0; i < x.length; ++i) {
@@ -1451,7 +1360,6 @@ function util_Int32FromBytes(x) {
   }
   return val;
 }
-
 /**Parameters:
  data - string, every `bytes` bytes will form one number entry
  array - the output array refference where numbers will be put
