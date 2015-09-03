@@ -1,6 +1,7 @@
 FROM jreeme/tangelo:0.9
 
 RUN pip install pykafka
+RUN pip install urllib3 -U
 RUN mkdir /tmp/src && cd /tmp/src && git clone https://github.com/sotera/Datawake
 RUN cd /usr/local/share/tangelo/web && rm -rf *
 RUN cd /usr/local/share/tangelo/web && cp -R /tmp/src/Datawake/server/datawake/ .
