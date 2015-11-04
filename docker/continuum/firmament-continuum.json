@@ -1,0 +1,47 @@
+[
+  {
+    "name": "data-container",
+    "Image": "jreeme/data-container:1.1",
+    "DockerFilePath": "docker/data-container",
+    "Hostname": "data-container"
+  },
+  {
+    "name": "mongo",
+    "Image": "jreeme/mongo:2.6",
+    "DockerFilePath": "docker/mongo/2.6",
+    "Hostname": "mongo",
+    "HostConfig": {
+      "VolumesFrom": [
+        "data-container"
+      ]
+    }
+  },
+  {
+    "name": "webapp",
+    "Image": "jreeme/strongloop:10",
+    "DockerFilePath": "docker/strong-pm",
+    "Hostname": "webapp",
+    "ExposedPorts": {
+      "3001/tcp": {}
+    },
+    "HostConfig": {
+      "Links": [
+        "mongo:mongo"
+      ],
+      "PortBindings": {
+        "3001/tcp": [
+          {
+            "HostPort": "3001"
+          }
+        ],
+        "8701/tcp": [
+          {
+            "HostPort": "8702"
+          }
+        ]
+      }
+    },
+    "ExpressApps": [
+    ]
+  }
+]
