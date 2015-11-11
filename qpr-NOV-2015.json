@@ -37,23 +37,6 @@
       }
     },
     "ExpressApps": [
-      {
-        "GitUrl": "https://github.com/Sotera/DatawakeDepot",
-        "GitSrcBranchName": "qpr-nov-2015",
-        "StrongLoopBranchName": "deploy",
-        "StrongLoopServerUrl": "http://localhost:8702",
-        "ServiceName": "DatawakeDepot",
-        "Scripts": [
-          {
-            "RelativeWorkingDir": ".",
-            "Command": "bower",
-            "Args": [
-              "install",
-              "--config.interactive=false"
-            ]
-          }
-        ]
-      }
     ]
   }
 ]

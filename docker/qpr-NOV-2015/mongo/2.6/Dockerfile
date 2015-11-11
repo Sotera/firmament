@@ -28,7 +28,8 @@ RUN curl -SL "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGO_VERSI
 	&& rm mongo.tgz*
 
 #For QPR use container for DB storage
-VOLUME /data/db
+RUN mkdir -p /data/db
+#VOLUME /data/db
 
 COPY docker-entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
