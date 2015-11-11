@@ -1,0 +1,16 @@
+[
+  {
+    "name": "qpr-NOV2015-mongo",
+    "Image": "jreeme/qpr-NOV2015-mongo:2.6",
+    "DockerFilePath": "docker/qpr-NOV2015/mongo/2.6",
+    "Hostname": "mongo",
+    "ExposedPorts": {
+      "27017/tcp": {}
+    },
+    "HostConfig": {
+      "Links": [
+        "mongo:mongo"
+      ]
+    }
+  }
+]
