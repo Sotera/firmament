@@ -1,90 +1,32 @@
 [
   {
-    "name": "data-container",
-    "Image": "jreeme/data-container:1.1",
-    "DockerFilePath": "docker/data-container",
-    "Hostname": "data-container"
-  },
-  {
-    "name": "mysql",
-    "Image": "jreeme/mysql:5.5.3",
-    "DockerFilePath": "docker/mysql/5.5",
-    "Env": [
-      "MYSQL_ROOT_PASSWORD=root"
-    ],
-    "Hostname": "mysql",
-    "HostConfig": {
-      "VolumesFrom": [
-        "data-container"
-      ]
-    }
-  },
-  {
-    "name": "mongo",
-    "Image": "jreeme/mongo:2.6",
-    "DockerFilePath": "docker/mongo/2.6",
+    "name": "datawake-mongo",
+    "Image": "jreeme/qpr-nov2015-mongo:2.6",
+    "DockerFilePath": "docker/qpr-NOV-2015/mongo/2.6",
     "Hostname": "mongo",
+    "ExposedPorts": {
+      "27017/tcp": {}
+    },
     "HostConfig": {
-      "VolumesFrom": [
-        "data-container"
-      ]
     }
   },
   {
-    "name": "loopback",
+    "name": "datawake-depot",
     "Image": "jreeme/strongloop:10",
     "DockerFilePath": "docker/strong-pm",
-    "Hostname": "loopback",
+    "Hostname": "datawake",
     "ExposedPorts": {
-      "3001/tcp": {}
+      "3001/tcp": {},
+      "8701/tcp": {}
     },
     "HostConfig": {
       "Links": [
-        "mongo:mongo",
-        "mysql:mysql"
+        "datawake-mongo:mongo"
       ],
       "PortBindings": {
         "3001/tcp": [
           {
-            "HostPort": "3001"
-          }
-        ],
-        "8701/tcp": [
-          {
-            "HostPort": "8701"
-          }
-        ]
-      }
-    },
-    "ExpressApps": [
-      {
-        "GitUrl": "https://github.com/Sotera/DatawakeManager-Loopback",
-        "GitSrcBranchName": "master",
-        "StrongLoopBranchName": "deploy",
-        "StrongLoopServerUrl": "http://localhost:8701",
-        "ServiceName": "DatawakeManager-Loopback"
-      }
-    ]
-  },
-  {
-    "name": "webapp",
-    "Image": "jreeme/strongloop:10",
-    "DockerFilePath": "docker/strong-pm",
-    "Hostname": "webapp",
-    "ExposedPorts": {
-      "3001/tcp": {}
-    },
-    "HostConfig": {
-      "Links": [
-        "loopback:loopback"
-      ],
-      "VolumesFrom": [
-        "data-container"
-      ],
-      "PortBindings": {
-        "3001/tcp": [
-          {
-            "HostPort": "3002"
+            "HostPort": "8082"
           }
         ],
         "8701/tcp": [
@@ -96,11 +38,11 @@
     },
     "ExpressApps": [
       {
-        "GitUrl": "https://github.com/Sotera/DatawakeManager-WebApp",
-        "GitSrcBranchName": "master",
+        "GitUrl": "https://github.com/Sotera/DatawakeDepot",
+        "GitSrcBranchName": "qpr-nov-2015",
         "StrongLoopBranchName": "deploy",
         "StrongLoopServerUrl": "http://localhost:8702",
-        "ServiceName": "DatawakeManager-WebApp",
+        "ServiceName": "DatawakeDepot",
         "Scripts": [
           {
             "RelativeWorkingDir": ".",
@@ -113,27 +55,5 @@
         ]
       }
     ]
-  },
-  {
-    "name": "tangelo",
-    "Image": "jreeme/tangelo:1.1",
-    "DockerFilePath": "docker/tangelo",
-    "Hostname": "tangelo",
-    "ExposedPorts": {
-      "80/tcp": {}
-    },
-    "HostConfig": {
-      "Links": [
-        "mysql:mysql",
-        "loopback:loopback"
-      ],
-      "PortBindings": {
-        "80/tcp": [
-          {
-            "HostPort": "80"
-          }
-        ]
-      }
-    }
   }
 ]
