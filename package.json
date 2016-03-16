@@ -1,8 +1,28 @@
 {
   "name": "firmament",
-  "version": "2.0.0",
-  "private": true,
+  "version": "0.0.1",
+  "description": "Docker management script",
+  "main": "firmament.js",
+  "scripts": {
+    "test": "./node_modules/.bin/jasmine-node spec/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jreeme/firmament.git"
+  },
+  "keywords": [
+    "firmament"
+  ],
+  "author": "John Reeme <john.reeme@gmail.com> (http://blue-dot.com/)",
+  "license": "WTFPL",
+  "bugs": {
+    "url": "https://github.com/jreeme/firmament/issues"
+  },
+  "devDependencies": {
+    "jasmine-node": "^1.14.5"
+  },
   "dependencies": {
-    "jsnlog": "^2.17.0"
+    "jsnlog": "^2.17.0",
+    "yargs": "^4.3.1"
   }
 }

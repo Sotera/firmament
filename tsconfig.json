@@ -2,11 +2,5 @@
   "compilerOptions": {
     "module": "commonjs",
     "sourceMap": true
-  },
-  "files": [
-    "typings/main/ambient/jsnlog/index.d.ts",
-    "typings/main/ambient/node/index.d.ts",
-    "typings/main/ambient/npm/index.d.ts",
-    "firmament.ts"
-  ]
+  }
 }
