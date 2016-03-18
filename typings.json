@@ -2,7 +2,6 @@
   "ambientDependencies": {
     "jasmine": "registry:dt/jasmine#2.2.0+20160308082659",
     "jsnlog": "registry:dt/jsnlog#2.11.0+20151114014156",
-    "node": "registry:dt/node#4.0.0+20160311162451",
-    "yargs": "registry:dt/yargs#0.0.0+20160215162030"
+    "node": "registry:dt/node#4.0.0+20160311162451"
   }
 }

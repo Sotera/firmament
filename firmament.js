@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 "use strict";
+var command_line_1 = require('./util/command-line');
+var makeCommand_1 = require('./commands/makeCommand');
 var log = require('jsnlog').JL();
-var CommandLine = require('./command-line');
-var commandLine = new CommandLine();
-commandLine.usage('Usage: $0 <command> [sub-command] [options]');
-commandLine.demand(2);
-/*commandLine.one();
-commandLine.two();*/
+var commandLine = new command_line_1.CommandLine();
+//
+commandLine.addCommandSpec(new makeCommand_1.MakeCommand());
 commandLine.exec();
 log.fatal('FATAL!');
 process.exit(0);

@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "jsnlog": "^2.17.0",
+    "positive": "^1.0.9",
     "yargs": "^4.3.1"
   }
 }
