@@ -2,7 +2,7 @@
 import {CommandImpl} from "./commandImpl";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import Argv = yargs.Argv;
-import {Command} from "./command";
+import {DockerDescriptors} from "../util/docker-descriptors";
 export class MakeCommand extends CommandImpl {
   constructor() {
     super();
@@ -15,6 +15,8 @@ export class MakeCommand extends CommandImpl {
     this.commandDesc = 'Support for building Docker container clusters';
     this.pushBuildCommand();
     this.pushTemplateCommand();
+    var tmp = new DockerDescriptors();
+    tmp = new DockerDescriptors();
   };
 
   private pushTemplateCommand() {
@@ -25,18 +27,17 @@ export class MakeCommand extends CommandImpl {
     templateCommand.builder = {
       out: {
         alias: 'o',
-        default: 'firmament.json'
+        default: 'firmament.json',
+        desc: 'Name the output JSON file'
       },
       full: {
         alias: 'f',
         boolean: true,
         default: false,
-        desc: 'banana'
+        desc: 'Create a full JSON template with all Docker options set to reasonable defaults'
       }
     };
-    templateCommand.handler = function (argv:yargs.Argv) {
-      log.debug(JSON.stringify(argv));
-    }
+    templateCommand.handler = (argv:yargs.Argv)=> this.makeTemplate(argv);
     this.subCommands.push(templateCommand);
   };
 
@@ -44,39 +45,50 @@ export class MakeCommand extends CommandImpl {
     let buildCommand = new CommandImpl();
     buildCommand.aliases = ['b', 'build'];
     buildCommand.commandDesc = 'Build Docker containers based on JSON spec'
-    buildCommand.handler = function (argv:yargs.Argv) {
-      log.debug('Make Build Me!');
-    }
+    buildCommand.handler = (argv:yargs.Argv)=> this.buildTemplate(argv);
     this.subCommands.push(buildCommand);
   };
 
-  private makeTemplate(filename, options, callback) {
-    log.info("\nCreating JSON template file '" + filename + "' ...");
-    var fs = require('fs');
-    if (fs.existsSync(filename)) {
-      var positive = require('positive');
-      if (positive("Config file '" + filename + "' already exists. Overwrite? [Y/n]", true)) {
-        log.error('Overwriting!');
-      } else {
-        log.error('Canceling!');
-      }
+  private buildTemplate(argv:any) {
+    log.error('Building the Template!');
+  }
+
+  private makeTemplate(argv:any) {
+    if (argv._.length > 1) {
+      throw new Error('Too many non-option arguments');
     }
-    /*
-     if (fs.existsSync(filename)) {
-     var yesno = requireCache('yesno');
-     yesno.ask("Config file '" + filename + "' already exists. Overwrite? [Y/n]", true, function (ok) {
-     if (ok) {
-     util_CallFunctionInFiber(function (callback) {
-     util_WriteTemplateFile(filename, options.full, callback);
-     }, [], callback);
-     } else {
-     callback({Message: 'Canceled'});
-     }
-     });
-     } else {
-     util_WriteTemplateFile(filename, options.full, callback);
-     }
-     */
+    const jsonFileExtension = '.json';
+    let path = require('path');
+    let cwd = process.cwd();
+    let outFilename:string = argv.out;
+    let regex = new RegExp('(.*)\\' + jsonFileExtension + '$', 'i');
+    if (regex.test(outFilename)) {
+      outFilename = outFilename.replace(regex, '$1' + jsonFileExtension);
+    } else {
+      outFilename = outFilename + jsonFileExtension;
+    }
+    let fullOutPath = path.resolve(cwd, outFilename);
+    var fs = require('fs');
+    if (fs.existsSync(fullOutPath)) {
+      var positive = require('positive');
+      if (positive("Config file '" + fullOutPath + "' already exists. Overwrite? [Y/n]", true)) {
+        this.writeJsonTemplateFile(fullOutPath, argv.full);
+      } else {
+        console.log('Canceling JSON template creation!');
+      }
+      return;
+    }
+    this.writeJsonTemplateFile(fullOutPath, argv.full);
+  }
+
+  private writeJsonTemplateFile(fullOutPath:string, writeFullTemplate:boolean) {
+    console.log("Writing JSON template file '" + fullOutPath + "' ...");
+    let objectToWrite = writeFullTemplate
+      ? DockerDescriptors.dockerContainerDefaultTemplate
+      : DockerDescriptors.dockerContainerConfigTemplate;
+    var jsonFile = require('jsonfile');
+    jsonFile.spaces = 2;
+    jsonFile.writeFileSync(fullOutPath, objectToWrite);
   }
 }
 
