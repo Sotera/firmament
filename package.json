@@ -22,6 +22,7 @@
     "jasmine-node": "^1.14.5"
   },
   "dependencies": {
+    "dockerode": "^2.2.10",
     "jsnlog": "^2.17.0",
     "jsonfile": "^2.2.3",
     "positive": "^1.0.9",
