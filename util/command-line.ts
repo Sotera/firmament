@@ -31,16 +31,11 @@ export class CommandLine {
               this.addCommandSpec(subCommand, yargs);
             });
             yargs.help();
-            //yargs.alias('help', 'h');
             yargs.argv;
           }
         );
       }
     });
-    /*    yargs.help('h');
-     yargs.alias('h', 'help');*/
-    //noinspection BadExpressionStatementJS
-    //yargs.argv;
   }
 
   exec():Argv {

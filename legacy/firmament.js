@@ -555,7 +555,7 @@ function docker_ShellIntoContainerByFirmamentId(ID) {
 }
 function docker_PS(options) {
   var wait = requireCache('wait.for');
-  return wait.for(docker_ScopePuppy, 'listContainers', {all: options.all});
+  return wait.for(docker_ScopePuppy, 'printContainerList', {all: options.all});
 }
 //Any 'requireCache()' calls in docker_ScopePuppy must exist in global.moduleDependencies
 function docker_ScopePuppy(fnName, options, callback) {
@@ -683,8 +683,8 @@ function docker_ScopePuppy(fnName, options, callback) {
           callback({error: msg}, {Message: msg});
         });
       });
-  } else if (fnName === 'listContainers') {
-    global.docker.listContainers(options, callback);
+  } else if (fnName === 'printContainerList') {
+    global.docker.printContainerList(options, callback);
   } else if (fnName === 'exec') {
     var child = requireCache('child_process').spawn('docker', ['exec', '-it', options.containerName, '/bin/bash'], {
       stdio: 'inherit'
