@@ -1,14 +1,18 @@
 ///<reference path="commandImpl.ts"/>
 import {CommandImpl} from "./commandImpl";
 const async = require('async');
+const deepExtend = require('deep-extend');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import Argv = yargs.Argv;
+import {DockerDescriptors} from "../util/docker-descriptors";
+import {ProgressBar} from "../util/progress-bar";
 interface ConsoleEx extends Console {
   table:any
 }
-declare var console:ConsoleEx;
+declare let console:ConsoleEx;
 export class DockerCommand extends CommandImpl {
   static docker = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
+  static progressBar = new ProgressBar();
 
   constructor() {
     log.trace('Constructing DockerCommand instance');
@@ -22,7 +26,7 @@ export class DockerCommand extends CommandImpl {
     this.command = '<subCommand>';
     this.commandDesc = 'Support for working with Docker containers';
     this.pushPsCommand();
-  };
+  }
 
   private pushPsCommand() {
     let psCommand = new CommandImpl();
@@ -38,7 +42,7 @@ export class DockerCommand extends CommandImpl {
     };
     psCommand.handler = (argv:yargs.Argv)=> this.printContainerList(argv);
     this.subCommands.push(psCommand);
-  };
+  }
 
   private printContainerList(argv:any) {
     this.listContainers(argv.a, (err, containers)=> {
@@ -46,7 +50,117 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
+  public pullImage(containerConfig:any, cb?:(err:Error)=>void) {
+    DockerCommand.docker.pull(containerConfig.Image,
+      (err, outputStream)=> {
+        outputStream.on('data', (chunk) => {
+          try {
+            let data = JSON.parse(chunk);
+            if (data.error) {
+              cb(new Error(data.error));
+              return;
+            }
+            if (data.status === 'Downloading' || data.status === 'Extracting'){
+              DockerCommand.progressBar.showProgressForTask(data.id,
+                data.status,
+                data.progressDetail.current,
+                data.progressDetail.total);
+            }
+          } catch (err) {
+            cb(err);
+          }
+        });
+        outputStream.on('end', () => {
+          cb(null);
+        });
+        outputStream.on('error', function () {
+          let msg = "Unable to pull image: '" + containerConfig.Image + "'";
+          cb(new Error(msg));
+        });
+      });
+  }
+
+  public createContainer(containerConfig:any, cb?:(err:Error, results)=>void) {
+    let fullContainerConfig = {};
+    deepExtend(fullContainerConfig, DockerDescriptors.dockerContainerDefaultDescriptor);
+    deepExtend(fullContainerConfig, containerConfig);
+    DockerCommand.docker.createContainer(fullContainerConfig, function (err, result) {
+      cb(err, result);
+    });
+  }
+  
+  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb?:(err:Error, results?:any)=>void){
+    try {
+      //Check existence of Docker directory
+      let fs = require('fs');
+      fs.statSync(dockerFilePath);
+    } catch (err) {
+      cb(err);
+      return;
+    }
+    let tar = require('tar-fs');
+    let tarStream = tar.pack(dockerFilePath);
+    try {
+      DockerCommand.docker.buildImage(tarStream, {
+        t: dockerImageName
+      }, function (err, outputStream) {
+        var ProgressBar = requireCache('progress');
+        var progressBars = {};
+        outputStream.on('data', function (chunk) {
+          try {
+            /*          console.log('-' + chunk);
+             return;*/
+            var data = JSON.parse(chunk);
+            if (data.error) {
+              options.data = data;
+              return;
+            }
+            if (data.status == 'Downloading' || data.status == 'Extracting') {
+              if (data.progressDetail && data.progressDetail.total) {
+                if (!progressBars[data.id + data.status]) {
+                  progressBars[data.id] = new ProgressBar('Id: ' + data.id + ' [:bar] :percent', {
+                    complete: '=',
+                    incomplete: ' ',
+                    width: 40,
+                    total: data.progressDetail.total
+                  });
+                  progressBars[data.id].lastCurrent = 0;
+                }
+                progressBars[data.id].tick(data.progressDetail.current - progressBars[data.id].lastCurrent);
+                progressBars[data.id].lastCurrent = data.progressDetail.current;
+              }
+            } else if (data.stream) {
+              console.log('>' + data.stream);
+            }
+          } catch (ex) {
+            util_LogError(ex);
+          }
+        });
+        outputStream.on('end', function () {
+          if (options.data && options.data.error) {
+            //A sad little hack to not stop processing on the 'tag not found error'. We'll do
+            //this better next time.
+            if (options.data.error.indexOf('not found in repository') == -1) {
+              callback(options.data, {Message: "Error building: '" + options.Image + "'."});
+            } else {
+              callback(null, {Message: "Image: '" + options.Image + "' built."});
+            }
+          } else {
+            callback(null, {Message: "Image: '" + options.Image + "' built."});
+          }
+        });
+        outputStream.on('error', function () {
+          var msg = "Error creating image: '" + options.Image + "'";
+          callback({error: msg}, {Message: msg});
+        });
+      });
+    } catch (ex) {
+      callback({Message: 'Unknown Docker command'}, null);
+    }
+  }
+
   public removeContainerByName(containerName:string, cb?:(err:Error, results)=>void) {
+    cb = cb || (()=>{});
     let self = this;
     let containerDockerId = '<unknown>';
     async.waterfall([
@@ -72,7 +186,9 @@ export class DockerCommand extends CommandImpl {
         (containerDockerId:string, cb:(err:Error)=>void)=> {
           try {
             console.log("Removing Docker container: '" + containerName + "' ...");
-            DockerCommand.docker.getContainer(containerDockerId).remove({force: 1}, cb);
+            DockerCommand.docker.getContainer(containerDockerId).remove({force: 1}, (err:Error)=>{
+              cb(null);
+            });
           } catch (err) {
             cb(err);
           }
@@ -103,11 +219,11 @@ export class DockerCommand extends CommandImpl {
     containers.sort(function (a, b) {
       return (a.Id < b.Id) ? -1 : 1
     });
-    var displayContainers = [];
-    var ourId = 0;
+    let displayContainers = [];
+    let ourId = 0;
     containers.forEach(function (container) {
-      var ourIdString = (++ourId).toString();
-      var displayContainer = {
+      let ourIdString = (++ourId).toString();
+      let displayContainer = {
         ID: ourIdString,
         Name: container.Names[0],
         Image: container.Image,
@@ -129,10 +245,10 @@ export class DockerCommand extends CommandImpl {
     if (typeof console.table === 'function') {
       return;
     }
-    var Table = require('easy-table');
+    let Table = require('easy-table');
 
     function arrayToString(arr) {
-      var t = new Table();
+      let t = new Table();
       arr.forEach(function (record) {
         if (typeof record === 'string' ||
           typeof record === 'number') {
@@ -149,14 +265,14 @@ export class DockerCommand extends CommandImpl {
     }
 
     function printTitleTable(title, arr) {
-      var str = arrayToString(arr);
-      var rowLength = str.indexOf('\n');
+      let str = arrayToString(arr);
+      let rowLength = str.indexOf('\n');
       if (rowLength > 0) {
         if (title.length > rowLength) {
           rowLength = title.length;
         }
         console.log(title);
-        var sep = '-', k, line = '';
+        let sep = '-', k, line = '';
         for (k = 0; k < rowLength; k += 1) {
           line += sep;
         }
@@ -166,7 +282,7 @@ export class DockerCommand extends CommandImpl {
     }
 
     function objectToArray(obj) {
-      var keys = Object.keys(obj);
+      let keys = Object.keys(obj);
       return keys.map(function (key) {
         return {
           key: key,
@@ -180,7 +296,7 @@ export class DockerCommand extends CommandImpl {
     }
 
     console.table = function () {
-      var args = Array.prototype.slice.call(arguments);
+      let args = Array.prototype.slice.call(arguments);
       if (args.length === 2 &&
         typeof args[0] === 'string' &&
         Array.isArray(args[1])) {

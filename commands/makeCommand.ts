@@ -1,9 +1,14 @@
 ///<reference path="commandImpl.ts"/>
 import {CommandImpl} from "./commandImpl";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
+const async = require('async');
 import Argv = yargs.Argv;
 import {DockerDescriptors} from "../util/docker-descriptors";
 import {DockerCommand} from "./dockerCommand";
+interface ErrorEx extends Error {
+  statusCode:number,
+  json:string
+}
 export class MakeCommand extends CommandImpl {
   static defaultConfigFilename = 'firmament.json';
   static jsonFileExtension = '.json';
@@ -97,11 +102,74 @@ export class MakeCommand extends CommandImpl {
   }
 
   private processContainerConfigs(containerConfigs) {
-    let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
     var docker = new DockerCommand();
-    sortedContainerConfigs.forEach(function (containerConfig) {
-      docker.removeContainerByName('/' + containerConfig.name);
+    async.waterfall([
+      (cb:(err:Error, containerConfigs:any[])=>void)=> {
+        async.each(containerConfigs,
+          (containerConfig, cb)=> {
+            docker.removeContainerByName('/' + containerConfig.name, ()=>{
+              cb(null);
+            });
+          }, (err:Error) => {
+            cb(err, containerConfigs);
+          });
+      },
+      (containerConfigs:any[], cb:(err:Error)=>void)=> {
+        let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
+        async.eachSeries(sortedContainerConfigs,
+          (containerConfig, cb:(err:Error, results?:any)=>void)=> {
+            async.waterfall([
+              (cb:(err:Error,tryPullImage:boolean)=>void)=>{
+                docker.createContainer(containerConfig, (err:ErrorEx)=> {
+                  if (err && err.statusCode === 404) {
+                    //Send the error as the second parameter so as not to short-circuit
+                    //the waterfall
+                    cb(null, true);
+                  } else {
+                    cb(null, false);
+                  }
+                });
+              },
+              (tryPullImage:boolean, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=>{
+                if(tryPullImage){
+                  docker.pullImage(containerConfig, (err:Error)=> {
+                    if(err){
+                      cb(null, true);
+                    }else{
+                      cb(null, false);
+                    }
+                  });
+                }else{
+                  cb(null, false);
+                }
+              },
+              (tryBuildDockerfile, cb:(err:Error)=>void)=>{
+                if(tryBuildDockerfile){
+                  let path = require('path');
+                  let cwd = process.cwd();
+                  let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
+                  let dockerImageName = containerConfig.Image;
+                  docker.buildDockerFile(dockerFilePath, dockerImageName, (err, result)=>{
+                    
+                  });
+                }else{
+                  cb(null);
+                }
+              }
+            ],(err:Error, results:any)=>{
+              cb(err, results);
+            });
+          }, (err) => {
+            if (err) {
+              log.error(err.message)
+            }
+          });
+      }
+    ], (err:Error, results:any)=> {
     });
+    /*    sortedContainerConfigs.forEach(function (containerConfig) {
+     docker.removeContainerByName('/' + containerConfig.name);
+     });*/
     /*        sortedContainerConfigs.forEach(function (containerConfig) {
      console.log("Creating Docker container: '" + containerConfig.name + "'");
      var result = docker_CreateContainer(containerConfig);
