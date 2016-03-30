@@ -16,7 +16,7 @@ export class ProgressBar {
     let bar = this.progressBarMap[id];
     if (!bar) {
       multi.offset++;
-      this.progressBarMap[id] = bar = multi.rel(2, this.offset++, this.config);
+      this.progressBarMap[id] = bar = multi.rel(1, this.offset++, this.config);
       console.log('>');// + id);
     }
     status = ' ** ' + id + ': ' + status + '                    ';

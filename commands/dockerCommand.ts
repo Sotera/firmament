@@ -46,32 +46,39 @@ export class DockerCommand extends CommandImpl {
 
   private printContainerList(argv:any) {
     this.listContainers(argv.a, (err, containers)=> {
-      this.prettyPrintDockerContainerList(containers, false, argv.a);
+      this.prettyPrintDockerContainerList(containers, false, argv.a, (containers)=>{
+        process.exit(0);
+      });
     });
   }
 
-  public pullImage(containerConfig:any, cb?:(err:Error)=>void) {
+  public pullImage(containerConfig:any, cb:(err:Error)=>void) {
     DockerCommand.docker.pull(containerConfig.Image,
       (err, outputStream)=> {
+        let error:Error = null;
+        if (err) {
+          cb(err);
+          return;
+        }
         outputStream.on('data', (chunk) => {
           try {
             let data = JSON.parse(chunk);
             if (data.error) {
-              cb(new Error(data.error));
+              error = new Error(data.error);
               return;
             }
-            if (data.status === 'Downloading' || data.status === 'Extracting'){
+            if (data.status === 'Downloading' || data.status === 'Extracting') {
               DockerCommand.progressBar.showProgressForTask(data.id,
                 data.status,
                 data.progressDetail.current,
                 data.progressDetail.total);
             }
           } catch (err) {
-            cb(err);
+            error = err;
           }
         });
         outputStream.on('end', () => {
-          cb(null);
+          cb(error);
         });
         outputStream.on('error', function () {
           let msg = "Unable to pull image: '" + containerConfig.Image + "'";
@@ -88,12 +95,11 @@ export class DockerCommand extends CommandImpl {
       cb(err, result);
     });
   }
-  
-  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb?:(err:Error, results?:any)=>void){
+
+  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb:(err:Error, results?:any)=>void) {
     try {
       //Check existence of Docker directory
-      let fs = require('fs');
-      fs.statSync(dockerFilePath);
+      require('fs').statSync(dockerFilePath);
     } catch (err) {
       cb(err);
       return;
@@ -104,63 +110,48 @@ export class DockerCommand extends CommandImpl {
       DockerCommand.docker.buildImage(tarStream, {
         t: dockerImageName
       }, function (err, outputStream) {
-        var ProgressBar = requireCache('progress');
-        var progressBars = {};
+        if (err) {
+          cb(err);
+          return;
+        }
+        let error:Error = null;
         outputStream.on('data', function (chunk) {
           try {
-            /*          console.log('-' + chunk);
-             return;*/
-            var data = JSON.parse(chunk);
+            let data = JSON.parse(chunk);
             if (data.error) {
-              options.data = data;
+              error = data.error;
               return;
             }
             if (data.status == 'Downloading' || data.status == 'Extracting') {
-              if (data.progressDetail && data.progressDetail.total) {
-                if (!progressBars[data.id + data.status]) {
-                  progressBars[data.id] = new ProgressBar('Id: ' + data.id + ' [:bar] :percent', {
-                    complete: '=',
-                    incomplete: ' ',
-                    width: 40,
-                    total: data.progressDetail.total
-                  });
-                  progressBars[data.id].lastCurrent = 0;
-                }
-                progressBars[data.id].tick(data.progressDetail.current - progressBars[data.id].lastCurrent);
-                progressBars[data.id].lastCurrent = data.progressDetail.current;
-              }
-            } else if (data.stream) {
-              console.log('>' + data.stream);
+              DockerCommand.progressBar.showProgressForTask(data.id,
+                data.status,
+                data.progressDetail.current,
+                data.progressDetail.total);
             }
-          } catch (ex) {
-            util_LogError(ex);
+          } catch (err) {
+            error = err;
           }
         });
         outputStream.on('end', function () {
-          if (options.data && options.data.error) {
-            //A sad little hack to not stop processing on the 'tag not found error'. We'll do
-            //this better next time.
-            if (options.data.error.indexOf('not found in repository') == -1) {
-              callback(options.data, {Message: "Error building: '" + options.Image + "'."});
-            } else {
-              callback(null, {Message: "Image: '" + options.Image + "' built."});
-            }
-          } else {
-            callback(null, {Message: "Image: '" + options.Image + "' built."});
-          }
+          //A sad little hack to not stop processing on the 'tag not found error'. We'll do
+          //this better next time.
+          cb(error
+          && error.message
+          && error.message.indexOf('not found in repository') === -1
+            ? error
+            : null);
         });
         outputStream.on('error', function () {
-          var msg = "Error creating image: '" + options.Image + "'";
-          callback({error: msg}, {Message: msg});
+          var msg = "Error creating image: '" + dockerImageName + "'";
+          cb(new Error(msg));
         });
       });
-    } catch (ex) {
-      callback({Message: 'Unknown Docker command'}, null);
+    } catch (err) {
+      cb(err);
     }
   }
 
-  public removeContainerByName(containerName:string, cb?:(err:Error, results)=>void) {
-    cb = cb || (()=>{});
+  public removeContainerByName(containerName:string, cb:(err:Error, results)=>void) {
     let self = this;
     let containerDockerId = '<unknown>';
     async.waterfall([
@@ -186,7 +177,7 @@ export class DockerCommand extends CommandImpl {
         (containerDockerId:string, cb:(err:Error)=>void)=> {
           try {
             console.log("Removing Docker container: '" + containerName + "' ...");
-            DockerCommand.docker.getContainer(containerDockerId).remove({force: 1}, (err:Error)=>{
+            DockerCommand.docker.getContainer(containerDockerId).remove({force: 1}, (err:Error)=> {
               cb(null);
             });
           } catch (err) {
@@ -208,13 +199,15 @@ export class DockerCommand extends CommandImpl {
     DockerCommand.docker.listContainers({all: listAllContainers}, cb);
   }
 
-  private prettyPrintDockerContainerList(containers, noprint:boolean, all:boolean) {
+  private prettyPrintDockerContainerList(containers, noprint:boolean,
+                                         all:boolean, cb:(containers:any[])=>void):void {
     console.log('');//Line feed
     if (!containers || !containers.length) {
       if (!noprint) {
         console.log('No ' + (all ? '' : 'Running ') + 'Containers\n');
       }
-      return [];
+      cb([]);
+      return;
     }
     containers.sort(function (a, b) {
       return (a.Id < b.Id) ? -1 : 1
@@ -235,7 +228,7 @@ export class DockerCommand extends CommandImpl {
     if (!noprint) {
       console.table(displayContainers);
     }
-    return displayContainers;
+    cb(displayContainers);
   }
 
   private setupConsoleTable() {

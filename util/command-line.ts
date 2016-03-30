@@ -9,8 +9,6 @@ export class CommandLine {
     this.commandLineParser = require('yargs');
     this.commandLineParser.epilog(CommandImpl.epilog);
     this.commandLineParser.usage(CommandImpl.generalUsage);
-    this.commandLineParser.help();
-    this.commandLineParser.alias('help', 'h');
   }
 
   addCommandSpec(cmd:Command, yargs:Argv = this.commandLineParser) {
@@ -21,7 +19,14 @@ export class CommandLine {
           command,
           cmd.commandDesc,
           cmd.builder,
-          cmd.handler);
+          (argv:Argv)=> {
+            cmd.handler(argv);
+          })
+          .usage(CommandImpl.generalUsage)
+          .epilog(CommandImpl.epilog)
+          .help('h')
+          .alias('h', 'help')
+        yargs.argv;
       } else {
         yargs.command(
           command,
@@ -30,8 +35,6 @@ export class CommandLine {
             cmd.subCommands.forEach(subCommand=> {
               this.addCommandSpec(subCommand, yargs);
             });
-            yargs.help();
-            yargs.argv;
           }
         );
       }
@@ -39,6 +42,10 @@ export class CommandLine {
   }
 
   exec():Argv {
+    this.commandLineParser.demand(1);
+    this.commandLineParser.strict();
+    this.commandLineParser.help('h');
+    this.commandLineParser.alias('help', 'h');
     return this.commandLineParser.argv;
   }
 }

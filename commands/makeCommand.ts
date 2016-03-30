@@ -107,86 +107,66 @@ export class MakeCommand extends CommandImpl {
       (cb:(err:Error, containerConfigs:any[])=>void)=> {
         async.each(containerConfigs,
           (containerConfig, cb)=> {
-            docker.removeContainerByName('/' + containerConfig.name, ()=>{
+            docker.removeContainerByName('/' + containerConfig.name, ()=> {
               cb(null);
             });
           }, (err:Error) => {
             cb(err, containerConfigs);
           });
       },
-      (containerConfigs:any[], cb:(err:Error)=>void)=> {
+      (containerConfigs:any[], cb:(err:Error, results:any)=>void)=> {
         let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
         async.eachSeries(sortedContainerConfigs,
           (containerConfig, cb:(err:Error, results?:any)=>void)=> {
             async.waterfall([
-              (cb:(err:Error,tryPullImage:boolean)=>void)=>{
+              (cb:(err:Error, tryPullImage:boolean)=>void)=> {
                 docker.createContainer(containerConfig, (err:ErrorEx)=> {
-                  if (err && err.statusCode === 404) {
-                    //Send the error as the second parameter so as not to short-circuit
-                    //the waterfall
-                    cb(null, true);
-                  } else {
-                    cb(null, false);
-                  }
+                  cb(null, err && err.statusCode === 404);
                 });
               },
-              (tryPullImage:boolean, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=>{
-                if(tryPullImage){
+              (tryPullImage:boolean, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=> {
+                if (tryPullImage) {
                   docker.pullImage(containerConfig, (err:Error)=> {
-                    if(err){
-                      cb(null, true);
-                    }else{
-                      cb(null, false);
-                    }
+                    cb(null, !!err);
                   });
-                }else{
+                } else {
                   cb(null, false);
                 }
               },
-              (tryBuildDockerfile, cb:(err:Error)=>void)=>{
-                if(tryBuildDockerfile){
+              (tryBuildDockerfile, cb:(err:Error, result?:any)=>void)=> {
+                if (tryBuildDockerfile) {
                   let path = require('path');
                   let cwd = process.cwd();
                   let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
                   let dockerImageName = containerConfig.Image;
-                  docker.buildDockerFile(dockerFilePath, dockerImageName, (err, result)=>{
-                    
+                  docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
+                    err = new Error('test error');
+                    if(err){
+                      cb(err, 'success!!');
+                      return;
+                    }
+                    docker.createContainer(containerConfig, (err:ErrorEx)=> {
+                      cb(err);
+                    });
                   });
-                }else{
+                } else {
                   cb(null);
                 }
               }
-            ],(err:Error, results:any)=>{
+            ], (err:Error, results:string)=> {
               cb(err, results);
             });
-          }, (err) => {
-            if (err) {
-              log.error(err.message)
-            }
+          }, (err:Error, results:string) => {
+            cb(err, results);
           });
       }
-    ], (err:Error, results:any)=> {
+    ], (err:Error, results:string)=> {
+      if (err) {
+        log.error(err.message)
+      }
+      console.log(results);
+      process.exit(0);
     });
-    /*    sortedContainerConfigs.forEach(function (containerConfig) {
-     docker.removeContainerByName('/' + containerConfig.name);
-     });*/
-    /*        sortedContainerConfigs.forEach(function (containerConfig) {
-     console.log("Creating Docker container: '" + containerConfig.name + "'");
-     var result = docker_CreateContainer(containerConfig);
-     if (result.error) {
-     util_Fatal(result.error);
-     }
-     console.log(result.Message);
-     });
-     var containers = docker_PS({all: true});
-     docker_PrettyPrintDockerContainerList(containers, false, true);
-     //Start the containers
-     sortedContainerConfigs.forEach(function (containerConfig) {
-     console.log(docker_StartOrStopContainerByName('/' + containerConfig.name, containers, true).Message);
-     });
-     docker_PrettyPrintDockerContainerList(docker_PS({all: false}), false, false);*/
-    //Deploy the Express applications
-    var cwd = process.cwd();
     /*  sortedContainerConfigs.forEach(function (containerConfig) {
      if (!containerConfig.ExpressApps) {
      return;

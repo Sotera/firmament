@@ -1,7 +1,7 @@
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import {Command} from "./command";
 export class CommandImpl implements Command {
-  static generalUsage = 'Usage: $0 <command> <sub-command> [options]';
+  static generalUsage = '\nUsage: $0 <command> <sub-command> [options]';
   static epilog = '** "Let there be light"';
   constructor(){
     this.aliases = [];
