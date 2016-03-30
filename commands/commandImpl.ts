@@ -9,7 +9,7 @@ export class CommandImpl implements Command {
     this.command = '';
     this.commandDesc = '';
     this.builder = {};
-    this.handler = function(argv:yargs.Argv){
+    this.handler = function(argv:any){
       log.debug(argv);
     }
   }
@@ -17,7 +17,7 @@ export class CommandImpl implements Command {
   command:string;
   commandDesc:string;
   builder:any;
-  handler:(argv:yargs.Argv)=>void;
+  handler:(argv:any)=>void;
   subCommands:Command[];
 }
 

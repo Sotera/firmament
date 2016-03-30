@@ -2,7 +2,6 @@
 import {CommandImpl} from "./commandImpl";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
-import Argv = yargs.Argv;
 import {DockerDescriptors} from "../util/docker-descriptors";
 import {DockerCommand} from "./dockerCommand";
 interface ErrorEx extends Error {
@@ -19,7 +18,7 @@ export class MakeCommand extends CommandImpl {
   }
 
   private buildCommandTree() {
-    this.aliases = ['m', 'make'];
+    this.aliases = ['make', 'm'];
     this.command = '<subCommand>';
     this.commandDesc = 'Support for building Docker container clusters';
     this.pushBuildCommand();
@@ -28,7 +27,7 @@ export class MakeCommand extends CommandImpl {
 
   private pushTemplateCommand() {
     let templateCommand = new CommandImpl();
-    templateCommand.aliases = ['t', 'template'];
+    templateCommand.aliases = ['template', 't'];
     templateCommand.command = '[options]';
     templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
     templateCommand.builder = {
@@ -44,13 +43,13 @@ export class MakeCommand extends CommandImpl {
         desc: 'Create a full JSON template with all Docker options set to reasonable defaults'
       }
     };
-    templateCommand.handler = (argv:yargs.Argv)=> this.makeTemplate(argv);
+    templateCommand.handler = (argv:any)=> this.makeTemplate(argv);
     this.subCommands.push(templateCommand);
   };
 
   private pushBuildCommand() {
     let buildCommand = new CommandImpl();
-    buildCommand.aliases = ['b', 'build'];
+    buildCommand.aliases = ['build', 'b'];
     buildCommand.commandDesc = 'Build Docker containers based on JSON spec';
     buildCommand.builder = {
       input: {
@@ -59,7 +58,7 @@ export class MakeCommand extends CommandImpl {
         desc: 'Name the config JSON file'
       }
     };
-    buildCommand.handler = (argv:yargs.Argv)=> this.buildTemplate(argv);
+    buildCommand.handler = (argv:any)=> this.buildTemplate(argv);
     this.subCommands.push(buildCommand);
   };
 

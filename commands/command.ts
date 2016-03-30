@@ -1,9 +1,8 @@
-import Argv = yargs.Argv;
 export interface Command {
   aliases: string[];
   command: string;
   commandDesc: string;
-  handler: (argv:Argv)=>void;
+  handler: (argv:any)=>void;
   builder: any;
   subCommands: Command[]
 }
