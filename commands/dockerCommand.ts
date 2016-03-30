@@ -22,17 +22,35 @@ export class DockerCommand extends CommandImpl {
   }
 
   private buildCommandTree() {
-    this.aliases = ['d', 'docker'];
+    this.aliases = ['docker', 'd'];
     this.command = '<subCommand>';
     this.commandDesc = 'Support for working with Docker containers';
     this.pushPsCommand();
+    this.pushStartCommand();
+    this.pushStopCommand();
+  }
+
+  private pushStartCommand() {
+    let startCommand = new CommandImpl();
+    startCommand.aliases = ['start'];
+    startCommand.commandDesc = 'Start Docker containers';
+    startCommand.handler = (argv)=> this.startOrStopContainers(argv,true)
+    this.subCommands.push(startCommand);
+  }
+
+  private pushStopCommand() {
+    let stopCommand = new CommandImpl();
+    stopCommand.aliases = ['stop'];
+    stopCommand.commandDesc = 'Stop Docker containers';
+    stopCommand.handler = (argv)=> this.startOrStopContainers(argv,false)
+    this.subCommands.push(stopCommand);
   }
 
   private pushPsCommand() {
     let psCommand = new CommandImpl();
     psCommand.aliases = ['ps'];
     psCommand.commandDesc = 'List Docker containers';
-    psCommand.builder = {
+    psCommand.options = {
       all: {
         alias: 'a',
         boolean: true,
@@ -46,7 +64,7 @@ export class DockerCommand extends CommandImpl {
 
   private printContainerList(argv:any) {
     this.listContainers(argv.a, (err, containers)=> {
-      this.prettyPrintDockerContainerList(containers, false, argv.a, (containers)=>{
+      this.prettyPrintDockerContainerList(err, containers, argv.a, ()=> {
         process.exit(0);
       });
     });
@@ -195,29 +213,122 @@ export class DockerCommand extends CommandImpl {
       });
   }
 
-  public listContainers(listAllContainers:boolean, cb:(err:Error, containers:any[])=>void) {
-    DockerCommand.docker.listContainers({all: listAllContainers}, cb);
+  private startOrStopContainers(argv:any,start:boolean) {
+    this.getContainers(argv._.slice(2), (err:Error, containers:any[])=> {
+      if(err){
+        log.error(err.message);
+      }
+      containers.forEach(container=>{
+        if(typeof container === 'string'){
+          console.log(container);
+          return;
+        }
+        if(start){
+          container.start((err:Error)=>{
+            if(err){
+              log.error(err.message);
+              return;
+            }
+          });
+        }
+        else{
+          container.stop((err:Error)=>{
+            if(err){
+              log.error(err.message);
+              return;
+            }
+          });
+        }
+      });
+    });
   }
 
-  private prettyPrintDockerContainerList(containers, noprint:boolean,
-                                         all:boolean, cb:(containers:any[])=>void):void {
+  private getContainers(ids:string[], cb:(err:Error, containers:any[])=>void) {
+    let fnArray = [];
+    ids.forEach(id=> {
+      fnArray.push(async.apply(this.getContainer.bind(this), id.toString()));
+    });
+    async.series(fnArray, (err:Error, results:any[])=> {
+      if (err) {
+        cb(err, []);
+      } else {
+        cb(err, results.filter(result=> {
+          //return only non-null containers
+          return result;
+        }));
+      }
+    });
+  }
+
+  private getContainer(id:string, cb:(err:Error, container:any)=>void) {
+    let self = this;
+    async.waterfall([
+        (cb:(err:Error)=>void)=> {
+          self.listContainers(true, cb);
+        },
+        (containers:any[], cb:(err:Error, container:any)=>void)=> {
+          let foundContainers = containers.filter(container=> {
+            if (container.firmamentId === id) {
+              return true;
+            } else {
+              for (let i = 0; i < container.Names.length; ++i) {
+                if (id === container.Names[i]) {
+                  return true;
+                }
+              }
+              let lowerCaseId = id.toLowerCase();
+              let charCount = lowerCaseId.length;
+              return container.Id.toLowerCase().substring(0, charCount) ===
+                lowerCaseId.substring(0, charCount);
+            }
+          });
+          if (foundContainers.length > 0) {
+            cb(null, DockerCommand.docker.getContainer(foundContainers[0].Id));
+          } else {
+            cb(null, 'Unable to find container: "' + id + '"');
+          }
+        }
+      ],
+      cb);
+  }
+
+  public listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
+    DockerCommand.docker.listContainers({all: true}, (err:Error, allContainers:any[])=> {
+      if (err) {
+        cb(err);
+        return;
+      }
+      //Sort by name so firmament id is consistent
+      allContainers.sort(function (a, b) {
+        return a.Names[0].localeCompare(b.Names[0]);
+      });
+      let containers = [];
+      let firmamentId = 0;
+      allContainers.forEach(container=> {
+        container.firmamentId = (++firmamentId).toString();
+        if (listAllContainers) {
+          containers.push(container);
+        } else if (container.Status.substring(0, 2) === 'Up') {
+          containers.push(container);
+        }
+      });
+      cb(null, containers);
+    });
+  }
+
+  private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean, cb:()=>void):void {
     console.log('');//Line feed
     if (!containers || !containers.length) {
-      if (!noprint) {
-        console.log('No ' + (all ? '' : 'Running ') + 'Containers\n');
-      }
-      cb([]);
+      console.log(err
+        ? err.message + '\n'
+        : 'No ' + (all ? '' : 'Running ') + 'Containers\n');
+      cb();
       return;
     }
-    containers.sort(function (a, b) {
-      return (a.Id < b.Id) ? -1 : 1
-    });
     let displayContainers = [];
-    let ourId = 0;
     containers.forEach(function (container) {
-      let ourIdString = (++ourId).toString();
       let displayContainer = {
-        ID: ourIdString,
+        ID: container.firmamentId,
         Name: container.Names[0],
         Image: container.Image,
         DockerId: container.Id.substring(0, 11),
@@ -225,10 +336,8 @@ export class DockerCommand extends CommandImpl {
       };
       displayContainers.push(displayContainer);
     });
-    if (!noprint) {
-      console.table(displayContainers);
-    }
-    cb(displayContainers);
+    console.table(displayContainers);
+    cb();
   }
 
   private setupConsoleTable() {

@@ -3,6 +3,6 @@ export interface Command {
   command: string;
   commandDesc: string;
   handler: (argv:any)=>void;
-  builder: any;
+  options: any;
   subCommands: Command[]
 }

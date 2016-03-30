@@ -30,7 +30,7 @@ export class MakeCommand extends CommandImpl {
     templateCommand.aliases = ['template', 't'];
     templateCommand.command = '[options]';
     templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
-    templateCommand.builder = {
+    templateCommand.options = {
       output: {
         alias: 'o',
         default: MakeCommand.defaultConfigFilename,
@@ -51,10 +51,17 @@ export class MakeCommand extends CommandImpl {
     let buildCommand = new CommandImpl();
     buildCommand.aliases = ['build', 'b'];
     buildCommand.commandDesc = 'Build Docker containers based on JSON spec';
-    buildCommand.builder = {
+    buildCommand.options = {
+      verbose: {
+        alias: 'v',
+        default: false,
+        type: 'boolean',
+        desc: 'Name the config JSON file'
+      },
       input: {
         alias: 'i',
         default: MakeCommand.defaultConfigFilename,
+        type: 'string',
         desc: 'Name the config JSON file'
       }
     };
@@ -67,7 +74,7 @@ export class MakeCommand extends CommandImpl {
     console.log("Constructing Docker containers described in: '" + fullInputPath + "'");
     var jsonFile = require('jsonfile');
     var containerDescriptors = jsonFile.readFileSync(fullInputPath);
-    this.processContainerConfigs(containerDescriptors);
+    this.processContainerConfigs(containerDescriptors, argv.verbose);
   }
 
   private makeTemplate(argv:any) {
@@ -100,7 +107,7 @@ export class MakeCommand extends CommandImpl {
     return path.resolve(cwd, filename);
   }
 
-  private processContainerConfigs(containerConfigs) {
+  private processContainerConfigs(containerConfigs:any[], verbose:boolean) {
     var docker = new DockerCommand();
     async.waterfall([
       (cb:(err:Error, containerConfigs:any[])=>void)=> {
@@ -120,7 +127,7 @@ export class MakeCommand extends CommandImpl {
             async.waterfall([
               (cb:(err:Error, tryPullImage:boolean)=>void)=> {
                 docker.createContainer(containerConfig, (err:ErrorEx)=> {
-                  cb(null, err && err.statusCode === 404);
+                  cb(null, !!err && err.statusCode === 404);
                 });
               },
               (tryPullImage:boolean, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=> {
@@ -139,11 +146,14 @@ export class MakeCommand extends CommandImpl {
                   let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
                   let dockerImageName = containerConfig.Image;
                   docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
-                    err = new Error('test error');
-                    if(err){
-                      cb(err, 'success!!');
+                    if (err) {
+                      cb(err);
                       return;
                     }
+                    let msg = 'Built Docker image: "';
+                    msg += dockerImageName + '" from: "';
+                    msg += dockerFilePath + '"';
+                    console.log(msg);
                     docker.createContainer(containerConfig, (err:ErrorEx)=> {
                       cb(err);
                     });
@@ -151,6 +161,11 @@ export class MakeCommand extends CommandImpl {
                 } else {
                   cb(null);
                 }
+              },
+              (cb:(err:Error)=>void)=> {
+                //start container
+                var c = containerConfig;
+                cb(null);
               }
             ], (err:Error, results:string)=> {
               cb(err, results);

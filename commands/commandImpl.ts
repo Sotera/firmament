@@ -8,7 +8,7 @@ export class CommandImpl implements Command {
     this.subCommands = [];
     this.command = '';
     this.commandDesc = '';
-    this.builder = {};
+    this.options = {};
     this.handler = function(argv:any){
       log.debug(argv);
     }
@@ -16,7 +16,7 @@ export class CommandImpl implements Command {
   aliases:string[];
   command:string;
   commandDesc:string;
-  builder:any;
+  options:any;
   handler:(argv:any)=>void;
   subCommands:Command[];
 }
