@@ -3,7 +3,6 @@ import {CommandImpl} from "./commandImpl";
 const async = require('async');
 const deepExtend = require('deep-extend');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
-import Argv = yargs.Argv;
 import {DockerDescriptors} from "../util/docker-descriptors";
 import {ProgressBar} from "../util/progress-bar";
 interface ConsoleEx extends Console {
@@ -40,7 +39,7 @@ export class DockerCommand extends CommandImpl {
         desc: 'Show non-running containers also'
       }
     };
-    psCommand.handler = (argv:yargs.Argv)=> this.printContainerList(argv);
+    psCommand.handler = (argv:any)=> this.printContainerList(argv);
     this.subCommands.push(psCommand);
   }
 
@@ -90,7 +89,7 @@ export class DockerCommand extends CommandImpl {
   }
   
   public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb?:(err:Error, results?:any)=>void){
-    try {
+/*    try {
       //Check existence of Docker directory
       let fs = require('fs');
       fs.statSync(dockerFilePath);
@@ -108,8 +107,8 @@ export class DockerCommand extends CommandImpl {
         var progressBars = {};
         outputStream.on('data', function (chunk) {
           try {
-            /*          console.log('-' + chunk);
-             return;*/
+            /!*          console.log('-' + chunk);
+             return;*!/
             var data = JSON.parse(chunk);
             if (data.error) {
               options.data = data;
@@ -156,7 +155,7 @@ export class DockerCommand extends CommandImpl {
       });
     } catch (ex) {
       callback({Message: 'Unknown Docker command'}, null);
-    }
+    }*/
   }
 
   public removeContainerByName(containerName:string, cb?:(err:Error, results)=>void) {
