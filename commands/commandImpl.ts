@@ -42,14 +42,28 @@ export class CommandImpl implements Command {
     process.exit(exitCode);
   }
 
+  protected callbackIfError(cb:(err:Error, result:any)=>void,
+                           err:Error = null,
+                           result:any = null):boolean {
+    if(this.logError(err)){
+      if (cb && (typeof cb === 'function')) {
+        cb(err, result);
+      }
+      //return 'true' if (err !== null)
+      return true;
+    }
+    return false;
+  }
+
   protected logAndCallback(msg:string,
                            cb:(err:Error, result:any)=>void,
                            err:Error = null,
-                           result:any = null) {
+                           result:any = null):boolean {
     console.log(msg);
     if (cb && (typeof cb === 'function')) {
       cb(err, result);
     }
+    return !!err;
   }
 }
 

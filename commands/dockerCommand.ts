@@ -28,13 +28,28 @@ export class DockerCommand extends CommandImpl {
     this.pushPsCommand();
     this.pushStartCommand();
     this.pushStopCommand();
+    this.pushRemoveCommand();
+  }
+
+  private pushRemoveCommand() {
+    let removeCommand = new CommandImpl();
+    removeCommand.aliases = ['rm'];
+    removeCommand.commandDesc = 'Remove Docker containers';
+    removeCommand.handler = (argv)=> {
+      this.removeContainers(argv._.slice(2), (err, results)=> {
+        this.processExit(0);
+      });
+    };
+    this.subCommands.push(removeCommand);
   }
 
   private pushStartCommand() {
     let startCommand = new CommandImpl();
     startCommand.aliases = ['start'];
     startCommand.commandDesc = 'Start Docker containers';
-    startCommand.handler = (argv)=> this.startOrStopContainers(argv, true)
+    startCommand.handler = (argv)=> {
+      this.startOrStopContainers(argv._.slice(2), true);
+    };
     this.subCommands.push(startCommand);
   }
 
@@ -42,7 +57,9 @@ export class DockerCommand extends CommandImpl {
     let stopCommand = new CommandImpl();
     stopCommand.aliases = ['stop'];
     stopCommand.commandDesc = 'Stop Docker containers';
-    stopCommand.handler = (argv)=> this.startOrStopContainers(argv, false)
+    stopCommand.handler = (argv)=> {
+      this.startOrStopContainers(argv._.slice(2), false);
+    };
     this.subCommands.push(stopCommand);
   }
 
@@ -64,53 +81,7 @@ export class DockerCommand extends CommandImpl {
 
   private printContainerList(argv:any) {
     this.listContainers(argv.a, (err, containers)=> {
-      this.prettyPrintDockerContainerList(err, containers, argv.a, ()=> {
-        process.exit(0);
-      });
-    });
-  }
-
-  public pullImage(containerConfig:any, cb:(err:Error)=>void) {
-    DockerCommand.docker.pull(containerConfig.Image,
-      (err, outputStream)=> {
-        let error:Error = null;
-        if (err) {
-          cb(err);
-          return;
-        }
-        outputStream.on('data', (chunk) => {
-          try {
-            let data = JSON.parse(chunk);
-            if (data.error) {
-              error = new Error(data.error);
-              return;
-            }
-            if (data.status === 'Downloading' || data.status === 'Extracting') {
-              DockerCommand.progressBar.showProgressForTask(data.id,
-                data.status,
-                data.progressDetail.current,
-                data.progressDetail.total);
-            }
-          } catch (err) {
-            error = err;
-          }
-        });
-        outputStream.on('end', () => {
-          cb(error);
-        });
-        outputStream.on('error', function () {
-          let msg = "Unable to pull image: '" + containerConfig.Image + "'";
-          cb(new Error(msg));
-        });
-      });
-  }
-
-  public createContainer(containerConfig:any, cb?:(err:Error, results)=>void) {
-    let fullContainerConfig = {};
-    deepExtend(fullContainerConfig, DockerDescriptors.dockerContainerDefaultDescriptor);
-    deepExtend(fullContainerConfig, containerConfig);
-    DockerCommand.docker.createContainer(fullContainerConfig, function (err, result) {
-      cb(err, result);
+      this.prettyPrintDockerContainerList(err, containers, argv.a);
     });
   }
 
@@ -160,7 +131,7 @@ export class DockerCommand extends CommandImpl {
             : null);
         });
         outputStream.on('error', function () {
-          var msg = "Error creating image: '" + dockerImageName + "'";
+          let msg = "Error creating image: '" + dockerImageName + "'";
           cb(new Error(msg));
         });
       });
@@ -169,54 +140,70 @@ export class DockerCommand extends CommandImpl {
     }
   }
 
-  public removeContainerByName(containerName:string, cb:(err:Error, results)=>void) {
-    let self = this;
-    let containerDockerId = '<unknown>';
-    async.waterfall([
-        (cb:(err:Error)=>void)=> {
-          self.listContainers(true, cb);
-        },
-        (containers:any[], cb:(err:Error, containerDockerId?:string)=>void)=> {
-          try {
-            containerDockerId = containers.filter(function (container) {
-              for (let i = 0; i < container.Names.length; ++i) {
-                if (containerName === container.Names[i]) {
-                  return true;
-                }
-              }
-              return false;
-            })[0].Id;
-          } catch (err) {
-            cb(new Error('Container "' + containerName + '" does not exist.'));
-            return;
-          }
-          cb(null, containerDockerId);
-        },
-        (containerDockerId:string, cb:(err:Error)=>void)=> {
-          try {
-            console.log("Removing Docker container: '" + containerName + "' ...");
-            DockerCommand.docker.getContainer(containerDockerId).remove({force: 1}, (err:Error)=> {
-              cb(null);
-            });
-          } catch (err) {
-            cb(err);
-          }
-        },
-      ],
-      (err:Error, results)=> {
+  public pullImage(containerConfig:any, cb:(err:Error)=>void) {
+    DockerCommand.docker.pull(containerConfig.Image,
+      (err, outputStream)=> {
+        let error:Error = null;
         if (err) {
-          log.error(err.message);
-        } else {
-          console.log("Docker container: '" + containerName + "' Removed.");
+          cb(err);
+          return;
         }
-        cb(err, results);
+        outputStream.on('data', (chunk) => {
+          try {
+            let data = JSON.parse(chunk);
+            if (data.error) {
+              error = new Error(data.error);
+              return;
+            }
+            if (data.status === 'Downloading' || data.status === 'Extracting') {
+              DockerCommand.progressBar.showProgressForTask(data.id,
+                data.status,
+                data.progressDetail.current,
+                data.progressDetail.total);
+            }
+          } catch (err) {
+            error = err;
+          }
+        });
+        outputStream.on('end', () => {
+          cb(error);
+        });
+        outputStream.on('error', function () {
+          let msg = "Unable to pull image: '" + containerConfig.Image + "'";
+          cb(new Error(msg));
+        });
       });
   }
 
-  private startOrStopContainers(argv:any, start:boolean) {
-    this.getContainers(argv._.slice(2), (err:Error, containers:any[])=> {
+  public createContainer(containerConfig:any, cb:(err:Error, results:any)=>void) {
+    deepExtend(containerConfig, DockerDescriptors.dockerContainerDefaultDescriptor);
+    DockerCommand.docker.createContainer(containerConfig, cb);
+  }
+
+  public removeContainers(containerIds:any[], cb:(err:Error, results)=>void) {
+    var self = this;
+    this.getContainers(containerIds, (err:Error, containers:any[])=> {
       this.logError(err);
       async.each(containers,
+        (containerOrErrorMsg, cb)=> {
+          if (typeof containerOrErrorMsg === 'string') {
+            this.logAndCallback(containerOrErrorMsg, cb);
+          } else {
+            containerOrErrorMsg.remove({force: 1}, (err:Error)=> {
+              var msg = 'Removing container "' + containerOrErrorMsg.name + '"';
+              self.logAndCallback(msg, cb, err, null);
+            });
+          }
+        },
+        cb
+      );
+    });
+  }
+
+  private startOrStopContainers(containerIds:any[], start:boolean) {
+    this.getContainers(containerIds, (err:Error, containers:any[])=> {
+      this.logError(err);
+      async.eachSeries(containers,
         (containerOrErrorMsg, cb)=> {
           if (typeof containerOrErrorMsg === 'string') {
             this.logAndCallback(containerOrErrorMsg, cb);
@@ -239,14 +226,11 @@ export class DockerCommand extends CommandImpl {
   }
 
   private getContainers(ids:string[], cb:(err:Error, containers:any[])=>void) {
-    let fnArray = [];
-    ids.forEach(id=> {
-      fnArray.push(async.apply(this.getContainer.bind(this), id.toString()));
+    let fnArray = ids.map(id=> {
+      return async.apply(this.getContainer.bind(this), id.toString());
     });
-    async.parallel(fnArray, (err:Error, results:any[])=> {
-      if (err) {
-        cb(err, []);
-      } else {
+    async.series(fnArray, (err:Error, results:any[])=> {
+      if (!this.callbackIfError(cb, err)) {
         cb(err, results.filter(result=> {
           return result;
         }));
@@ -272,7 +256,7 @@ export class DockerCommand extends CommandImpl {
               }
               let lowerCaseId = id.toLowerCase();
               let charCount = lowerCaseId.length;
-              if(charCount < 3){
+              if (charCount < 3) {
                 return false;
               }
               return container.Id.toLowerCase().substring(0, charCount) ===
@@ -291,52 +275,42 @@ export class DockerCommand extends CommandImpl {
       cb);
   }
 
-  public listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
+  private listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
     DockerCommand.docker.listContainers({all: true}, (err:Error, allContainers:any[])=> {
-      if (err) {
-        cb(err);
+      if (this.callbackIfError(cb, err)) {
         return;
       }
       //Sort by name so firmament id is consistent
       allContainers.sort(function (a, b) {
         return a.Names[0].localeCompare(b.Names[0]);
       });
-      let containers = [];
       let firmamentId = 0;
-      allContainers.forEach(container=> {
+      let containers = allContainers.map(container=> {
         container.firmamentId = (++firmamentId).toString();
-        if (listAllContainers) {
-          containers.push(container);
-        } else if (container.Status.substring(0, 2) === 'Up') {
-          containers.push(container);
-        }
+        return (listAllContainers || (container.Status.substring(0, 2) === 'Up')) ? container : null;
+      }).filter(container=> {
+        return container;
       });
       cb(null, containers);
     });
   }
 
-  private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean, cb:()=>void):void {
-    console.log('');//Line feed
+  private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean) {
     if (!containers || !containers.length) {
-      console.log(err
-        ? err.message + '\n'
-        : 'No ' + (all ? '' : 'Running ') + 'Containers\n');
-      cb();
-      return;
+      this.processExit(0,
+        this.returnErrorStringOrMessage(err, '\nNo ' + (all ? '' : 'Running ') + 'Containers\n'));
+    } else {
+      console.table(containers.map(container=> {
+        return {
+          ID: container.firmamentId,
+          Name: container.Names[0],
+          Image: container.Image,
+          DockerId: container.Id.substring(0, 11),
+          Status: container.Status
+        };
+      }));
+      this.processExit();
     }
-    let displayContainers = [];
-    containers.forEach(function (container) {
-      let displayContainer = {
-        ID: container.firmamentId,
-        Name: container.Names[0],
-        Image: container.Image,
-        DockerId: container.Id.substring(0, 11),
-        Status: container.Status
-      };
-      displayContainers.push(displayContainer);
-    });
-    console.table(displayContainers);
-    cb();
   }
 
   private setupConsoleTable() {
@@ -350,13 +324,13 @@ export class DockerCommand extends CommandImpl {
 
     function arrayToString(arr) {
       let t = new Table();
-      arr.forEach(function (record) {
+      arr.forEach(record=> {
         if (typeof record === 'string' ||
           typeof record === 'number') {
           t.cell('item', record);
         } else {
           // assume plain object
-          Object.keys(record).forEach(function (property) {
+          Object.keys(record).forEach(property=> {
             t.cell(property, record[property]);
           });
         }
@@ -384,7 +358,7 @@ export class DockerCommand extends CommandImpl {
 
     function objectToArray(obj) {
       let keys = Object.keys(obj);
-      return keys.map(function (key) {
+      return keys.map(key=> {
         return {
           key: key,
           value: obj[key]
@@ -397,13 +371,14 @@ export class DockerCommand extends CommandImpl {
     }
 
     console.table = function () {
+      console.log('');
       let args = Array.prototype.slice.call(arguments);
       if (args.length === 2 &&
         typeof args[0] === 'string' &&
         Array.isArray(args[1])) {
         return printTitleTable(args[0], args[1]);
       }
-      args.forEach(function (k) {
+      args.forEach(k=> {
         if (typeof k === 'string') {
           return console.log(k);
         } else if (Array.isArray(k)) {

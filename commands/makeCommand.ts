@@ -111,14 +111,12 @@ export class MakeCommand extends CommandImpl {
     var docker = new DockerCommand();
     async.waterfall([
       (cb:(err:Error, containerConfigs:any[])=>void)=> {
-        async.each(containerConfigs,
-          (containerConfig, cb)=> {
-            docker.removeContainerByName('/' + containerConfig.name, ()=> {
-              cb(null);
-            });
-          }, (err:Error) => {
-            cb(err, containerConfigs);
-          });
+        let containerNames = containerConfigs.map(containerConfig=>{
+          return containerConfig.name;
+        });
+        docker.removeContainers(containerNames,(err,results)=>{
+          cb(err, containerConfigs);
+        });
       },
       (containerConfigs:any[], cb:(err:Error, results:any)=>void)=> {
         let sortedContainerConfigs = this.containerDependencySort(containerConfigs);

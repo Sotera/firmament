@@ -698,7 +698,7 @@ function docker_ScopePuppy(fnName, options, callback) {
       callback({Message: 'No such container'}, null);
     } else if (fnName === 'startOrStopContainer') {
       options.start ? container.start(callback) : container.stop(callback);
-    } else if (fnName === 'removeContainer') {
+    } else if (fnName === 'removeContainers') {
       container.remove(options, callback);
     }
     else {
@@ -797,7 +797,7 @@ function docker_RemoveContainerByDockerId(dockerId) {
   try {
     idMessage = ': (Id: ' + dockerId.substring(1, 12) + ')';
     var wait = requireCache('wait.for');
-    wait.for(docker_ScopePuppy, 'removeContainer', {id: dockerId, force: 1});
+    wait.for(docker_ScopePuppy, 'removeContainers', {id: dockerId, force: 1});
     return {Message: 'Removed' + idMessage};
   } catch (ex) {
     var message = 'Removal FAILED' + idMessage + ': ' + (dockerId ? ex.message : '');
