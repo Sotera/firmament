@@ -34,7 +34,7 @@ export class DockerCommand extends CommandImpl {
     let startCommand = new CommandImpl();
     startCommand.aliases = ['start'];
     startCommand.commandDesc = 'Start Docker containers';
-    startCommand.handler = (argv)=> this.startOrStopContainers(argv,true)
+    startCommand.handler = (argv)=> this.startOrStopContainers(argv, true)
     this.subCommands.push(startCommand);
   }
 
@@ -42,7 +42,7 @@ export class DockerCommand extends CommandImpl {
     let stopCommand = new CommandImpl();
     stopCommand.aliases = ['stop'];
     stopCommand.commandDesc = 'Stop Docker containers';
-    stopCommand.handler = (argv)=> this.startOrStopContainers(argv,false)
+    stopCommand.handler = (argv)=> this.startOrStopContainers(argv, false)
     this.subCommands.push(stopCommand);
   }
 
@@ -213,33 +213,28 @@ export class DockerCommand extends CommandImpl {
       });
   }
 
-  private startOrStopContainers(argv:any,start:boolean) {
+  private startOrStopContainers(argv:any, start:boolean) {
     this.getContainers(argv._.slice(2), (err:Error, containers:any[])=> {
-      if(err){
-        log.error(err.message);
-      }
-      containers.forEach(container=>{
-        if(typeof container === 'string'){
-          console.log(container);
-          return;
+      this.logError(err);
+      async.each(containers,
+        (containerOrErrorMsg, cb)=> {
+          if (typeof containerOrErrorMsg === 'string') {
+            this.logAndCallback(containerOrErrorMsg, cb);
+          } else {
+            let resultMessage = 'Container "' + containerOrErrorMsg.name + '" ';
+            resultMessage += start ? 'started.' : 'stopped.';
+            let fnStartStop = start
+              ? containerOrErrorMsg.start.bind(containerOrErrorMsg)
+              : containerOrErrorMsg.stop.bind(containerOrErrorMsg);
+            fnStartStop((err:Error)=> {
+              this.logAndCallback(this.returnErrorStringOrMessage(err, resultMessage), cb);
+            });
+          }
+        },
+        ()=> {
+          this.processExit();
         }
-        if(start){
-          container.start((err:Error)=>{
-            if(err){
-              log.error(err.message);
-              return;
-            }
-          });
-        }
-        else{
-          container.stop((err:Error)=>{
-            if(err){
-              log.error(err.message);
-              return;
-            }
-          });
-        }
-      });
+      );
     });
   }
 
@@ -248,12 +243,11 @@ export class DockerCommand extends CommandImpl {
     ids.forEach(id=> {
       fnArray.push(async.apply(this.getContainer.bind(this), id.toString()));
     });
-    async.series(fnArray, (err:Error, results:any[])=> {
+    async.parallel(fnArray, (err:Error, results:any[])=> {
       if (err) {
         cb(err, []);
       } else {
         cb(err, results.filter(result=> {
-          //return only non-null containers
           return result;
         }));
       }
@@ -272,18 +266,23 @@ export class DockerCommand extends CommandImpl {
               return true;
             } else {
               for (let i = 0; i < container.Names.length; ++i) {
-                if (id === container.Names[i]) {
+                if (container.Names[i] === (id[0] === '/' ? id : '/' + id)) {
                   return true;
                 }
               }
               let lowerCaseId = id.toLowerCase();
               let charCount = lowerCaseId.length;
+              if(charCount < 3){
+                return false;
+              }
               return container.Id.toLowerCase().substring(0, charCount) ===
                 lowerCaseId.substring(0, charCount);
             }
           });
           if (foundContainers.length > 0) {
-            cb(null, DockerCommand.docker.getContainer(foundContainers[0].Id));
+            let containerObject = DockerCommand.docker.getContainer(foundContainers[0].Id);
+            containerObject.name = foundContainers[0].Names[0];
+            cb(null, containerObject);
           } else {
             cb(null, 'Unable to find container: "' + id + '"');
           }
