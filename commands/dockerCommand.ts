@@ -175,28 +175,30 @@ export class DockerCommand extends CommandImpl {
       });
   }
 
-  public createContainer(containerConfig:any, cb:(err:Error, results:any)=>void) {
-    deepExtend(containerConfig, DockerDescriptors.dockerContainerDefaultDescriptor);
-    DockerCommand.docker.createContainer(containerConfig, cb);
+  public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
+    var fullContainerConfigCopy = {};
+    //deepExtend(fullContainerConfigCopy, DockerDescriptors.dockerContainerDefaultDescriptor);
+    deepExtend(fullContainerConfigCopy, containerConfig);
+    DockerCommand.docker.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
+      cb(err, container);
+    });
   }
 
   public removeContainers(containerIds:any[], cb:(err:Error, results)=>void) {
     var self = this;
     this.getContainers(containerIds, (err:Error, containers:any[])=> {
       this.logError(err);
-      async.each(containers,
+      async.map(containers,
         (containerOrErrorMsg, cb)=> {
           if (typeof containerOrErrorMsg === 'string') {
-            this.logAndCallback(containerOrErrorMsg, cb);
+            this.logAndCallback(containerOrErrorMsg, cb, null, {msg: containerOrErrorMsg});
           } else {
             containerOrErrorMsg.remove({force: 1}, (err:Error)=> {
               var msg = 'Removing container "' + containerOrErrorMsg.name + '"';
-              self.logAndCallback(msg, cb, err, null);
+              self.logAndCallback(msg, cb, err, {msg});
             });
           }
-        },
-        cb
-      );
+        }, cb);
     });
   }
 

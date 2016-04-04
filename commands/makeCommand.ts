@@ -110,26 +110,56 @@ export class MakeCommand extends CommandImpl {
   private processContainerConfigs(containerConfigs:any[], verbose:boolean) {
     var docker = new DockerCommand();
     async.waterfall([
+      //Remove all containers mentioned in config file
       (cb:(err:Error, containerConfigs:any[])=>void)=> {
-        let containerNames = containerConfigs.map(containerConfig=>{
+        docker.removeContainers(containerConfigs.map(containerConfig=> {
           return containerConfig.name;
-        });
-        docker.removeContainers(containerNames,(err,results)=>{
-          cb(err, containerConfigs);
-        });
+        }), cb);
       },
-      (containerConfigs:any[], cb:(err:Error, results:any)=>void)=> {
+      (containerRemoveResults:any[], cb:(err:Error, results:any)=>void)=> {
         let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
         async.eachSeries(sortedContainerConfigs,
           (containerConfig, cb:(err:Error, results?:any)=>void)=> {
             async.waterfall([
-              (cb:(err:Error, tryPullImage:boolean)=>void)=> {
-                docker.createContainer(containerConfig, (err:ErrorEx)=> {
-                  cb(null, !!err && err.statusCode === 404);
+              (cb:(err:Error, tryPullImage?:boolean)=>void)=> {
+                //Most common scenario is that image exists but not container (since we just
+                //blew them away). Try to create container. This call will not fail. If the
+                //correct image isn't available to back it up the failure will occur when we
+                //start the container.
+                docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
+                  if (err) {
+                    cb(null, err.statusCode === 404);
+                  }
+                  else if (container) {
+                    //cb(null,false);return;
+                    container.start((err:ErrorEx)=> {
+                      if (err) {
+                        if (err.statusCode === 500) {
+                          //This is an odd case where we were allowed to create a container without
+                          //a backing image. Rewrite err.message to let user know containerConfig.Image
+                          //is incorrect.
+                          err.message = 'Container "' + containerConfig.name;
+                          err.message += '" is corrupt and being destroyed. Image name is probably bad.';
+                        }
+                        //Corrupt container, blast it
+                        container.remove({force: 1}, ()=> {
+                          cb(err);
+                        });
+                      } else {
+                        //Everything's cool & container is started. Use non-null Error to short-circuit
+                        //async waterfall
+                        let benignErr = new Error();
+                        benignErr.message = 'Container "' + containerConfig.name;
+                        benignErr.message += '" has started.';
+                        cb(benignErr);
+                      }
+                    });
+                  }
                 });
               },
-              (tryPullImage:boolean, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=> {
+              (tryPullImage = false, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=> {
                 if (tryPullImage) {
+                  console.log('Pulling image "' + containerConfig.Image + '"');
                   docker.pullImage(containerConfig, (err:Error)=> {
                     cb(null, !!err);
                   });
