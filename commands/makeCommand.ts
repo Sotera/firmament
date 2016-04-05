@@ -28,12 +28,12 @@ export class MakeCommand extends CommandImpl {
   private pushTemplateCommand() {
     let templateCommand = new CommandImpl();
     templateCommand.aliases = ['template', 't'];
-    templateCommand.command = '[options]';
     templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
     templateCommand.options = {
       output: {
         alias: 'o',
         default: MakeCommand.defaultConfigFilename,
+        type: 'string',
         desc: 'Name the output JSON file'
       },
       full: {
@@ -74,13 +74,10 @@ export class MakeCommand extends CommandImpl {
     console.log("Constructing Docker containers described in: '" + fullInputPath + "'");
     var jsonFile = require('jsonfile');
     var containerDescriptors = jsonFile.readFileSync(fullInputPath);
-    this.processContainerConfigs(containerDescriptors, argv.verbose);
+    this.processContainerConfigs(containerDescriptors);
   }
 
   private makeTemplate(argv:any) {
-    if (argv._.length > 1) {
-      throw new Error('Too many non-option arguments');
-    }
     let fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
     var fs = require('fs');
     if (fs.existsSync(fullOutputPath)) {
@@ -90,9 +87,10 @@ export class MakeCommand extends CommandImpl {
       } else {
         console.log('Canceling JSON template creation!');
       }
-      return;
+    }else{
+      MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
     }
-    MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
+    this.processExit();
   }
 
   private static getJsonConfigFilePath(filename) {
@@ -107,7 +105,7 @@ export class MakeCommand extends CommandImpl {
     return path.resolve(cwd, filename);
   }
 
-  private processContainerConfigs(containerConfigs:any[], verbose:boolean) {
+  private processContainerConfigs(containerConfigs:any[]) {
     var docker = new DockerCommand();
     async.waterfall([
       //Remove all containers mentioned in config file
@@ -117,97 +115,67 @@ export class MakeCommand extends CommandImpl {
         }), cb);
       },
       (containerRemoveResults:any[], cb:(err:Error, results:any)=>void)=> {
-        let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
-        async.eachSeries(sortedContainerConfigs,
-          (containerConfig, cb:(err:Error, results?:any)=>void)=> {
-            async.waterfall([
-              (cb:(err:Error, tryPullImage?:boolean)=>void)=> {
-                //Most common scenario is that image exists but not container (since we just
-                //blew them away). Try to create container. This call will not fail. If the
-                //correct image isn't available to back it up the failure will occur when we
-                //start the container.
-                docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
-                  if (err) {
-                    cb(null, err.statusCode === 404);
-                  }
-                  else if (container) {
-                    //cb(null,false);return;
-                    container.start((err:ErrorEx)=> {
+        try {
+          let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
+          //Create containers in parallel
+          async.mapSeries(sortedContainerConfigs,
+            (containerConfig, cb:(err:Error, result:any)=>void)=> {
+              docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
+                if (err) {
+                  if (err.statusCode === 404) {
+                    //Try to pull image
+                    docker.pullImage(containerConfig, (err:Error)=> {
                       if (err) {
-                        if (err.statusCode === 500) {
-                          //This is an odd case where we were allowed to create a container without
-                          //a backing image. Rewrite err.message to let user know containerConfig.Image
-                          //is incorrect.
-                          err.message = 'Container "' + containerConfig.name;
-                          err.message += '" is corrupt and being destroyed. Image name is probably bad.';
-                        }
-                        //Corrupt container, blast it
-                        container.remove({force: 1}, ()=> {
-                          cb(err);
+                        //Try to build from Dockerfile
+                        let path = require('path');
+                        let cwd = process.cwd();
+                        let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
+                        let dockerImageName = containerConfig.Image;
+                        docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
+                          if (err) {
+                            cb(new Error('Unable to build Dockerfile at "' + dockerFilePath + '"'), null);
+                            return;
+                          }
+                          //Try to create built container
+                          docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
+                            this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
+                          });
                         });
                       } else {
-                        //Everything's cool & container is started. Use non-null Error to short-circuit
-                        //async waterfall
-                        let benignErr = new Error();
-                        benignErr.message = 'Container "' + containerConfig.name;
-                        benignErr.message += '" has started.';
-                        cb(benignErr);
+                        //Try to create pulled container
+                        docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
+                          this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
+                        });
                       }
                     });
+                  } else {
+                    cb(err, null);
                   }
-                });
-              },
-              (tryPullImage = false, cb:(err:Error, tryBuildDockerfile:boolean)=>void)=> {
-                if (tryPullImage) {
-                  console.log('Pulling image "' + containerConfig.Image + '"');
-                  docker.pullImage(containerConfig, (err:Error)=> {
-                    cb(null, !!err);
-                  });
                 } else {
-                  cb(null, false);
+                  this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
                 }
-              },
-              (tryBuildDockerfile, cb:(err:Error, result?:any)=>void)=> {
-                if (tryBuildDockerfile) {
-                  let path = require('path');
-                  let cwd = process.cwd();
-                  let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
-                  let dockerImageName = containerConfig.Image;
-                  docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
-                    if (err) {
-                      cb(err);
-                      return;
-                    }
-                    let msg = 'Built Docker image: "';
-                    msg += dockerImageName + '" from: "';
-                    msg += dockerFilePath + '"';
-                    console.log(msg);
-                    docker.createContainer(containerConfig, (err:ErrorEx)=> {
-                      cb(err);
-                    });
-                  });
-                } else {
-                  cb(null);
-                }
-              },
-              (cb:(err:Error)=>void)=> {
-                //start container
-                var c = containerConfig;
-                cb(null);
+              });
+            },
+            (err:Error, results:any[])=> {
+              if (this.callbackIfError(cb, err)) {
+                return;
               }
-            ], (err:Error, results:string)=> {
-              cb(err, results);
-            });
-          }, (err:Error, results:string) => {
-            cb(err, results);
-          });
+              let sortedContainerNames = sortedContainerConfigs.map(containerConfig=> {
+                return containerConfig.name;
+              });
+              docker.startOrStopContainers(sortedContainerNames, true, ()=> {
+                cb(null, null);
+              });
+            },
+            (err:Error, results:any[])=> {
+            }
+          );
+        }catch(err){
+          this.callbackIfError(cb, err);
+        }
       }
     ], (err:Error, results:string)=> {
-      if (err) {
-        log.error(err.message)
-      }
-      console.log(results);
-      process.exit(0);
+      this.processExit();
     });
     /*  sortedContainerConfigs.forEach(function (containerConfig) {
      if (!containerConfig.ExpressApps) {
@@ -304,7 +272,7 @@ export class MakeCommand extends CommandImpl {
         sorted.push(name);
       });
     } catch (ex) {
-      log.fatal('Linked container dependency sort failed. You are probably trying to link to an unknown container.');
+      throw new Error('Linked container dependency sort failed. You are probably trying to link to an unknown container.');
     }
     return sorted;
   }

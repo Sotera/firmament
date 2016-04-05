@@ -1,104 +1,35 @@
 export class DockerDescriptors {
   static dockerContainerConfigTemplate = [
     {
-      name: 'data-container',
-      Image: 'jreeme/data-container:1.1',
-      DockerFilePath: 'docker/data-container',
-      Hostname: 'data-container'
-    },
-    {
-      name: 'mysql',
-      Image: 'jreeme/mysql:5.5.3',
-      DockerFilePath: 'docker/mysql/5.5',
-      Env: ['MYSQL_ROOT_PASSWORD=root'],
-      Hostname: 'mysql',
-      HostConfig: {
-        //Links: ['data-container:data-container'],
-        VolumesFrom: ['data-container']
-      }
-    },
-    {
       name: 'mongo',
       Image: 'jreeme/mongo:2.6',
       DockerFilePath: 'docker/mongo/2.6',
       Hostname: 'mongo',
-      HostConfig: {
-        //Links: ['data-container:data-container'],
-        VolumesFrom: ['data-container']
-      }
+      HostConfig: {}
     },
     {
-      name: 'loopback',
-      Image: 'jreeme/strongloop:10',
-      DockerFilePath: 'docker/strong-pm',
-      Hostname: 'loopback',
-      ExposedPorts: {
-        '3001/tcp': {}
-      },
+      name: 'strongloop',
+      Image: 'strongloop/strong-pm:node-5',
+      Hostname: 'strongloop',
       HostConfig: {
-        Links: ['mongo:mongo', 'mysql:mysql'],
+        Links: ['mongo:mongo'],
         PortBindings: {
+          '3000/tcp': [{HostPort: '3000'}],
           '3001/tcp': [{HostPort: '3001'}],
+          '3002/tcp': [{HostPort: '3002'}],
+          '3003/tcp': [{HostPort: '3003'}],
           '8701/tcp': [{HostPort: '8701'}]
         }
       },
       ExpressApps: [
         {
-          GitUrl: 'https://github.com/Sotera/DatawakeManager-Loopback',
+          GitUrl: 'https://github.com/Sotera/DatawakeDepot',
           GitSrcBranchName: 'master',
           StrongLoopBranchName: 'deploy',
           StrongLoopServerUrl: 'http://localhost:8701',
           ServiceName: 'DatawakeManager-Loopback'
         }
       ]
-    },
-    {
-      name: 'webapp',
-      Image: 'jreeme/strongloop:10',
-      DockerFilePath: 'docker/strong-pm',
-      Hostname: 'webapp',
-      ExposedPorts: {
-        '3001/tcp': {}
-      },
-      HostConfig: {
-        Links: ['loopback:loopback'],
-        VolumesFrom: ['data-container'],
-        PortBindings: {
-          '3001/tcp': [{HostPort: '3002'}],
-          '8701/tcp': [{HostPort: '8702'}]
-        }
-      },
-      ExpressApps: [
-        {
-          GitUrl: 'https://github.com/Sotera/DatawakeManager-WebApp',
-          GitSrcBranchName: 'master',
-          StrongLoopBranchName: 'deploy',
-          StrongLoopServerUrl: 'http://localhost:8702',
-          ServiceName: 'DatawakeManager-WebApp',
-          Scripts: [
-            {
-              RelativeWorkingDir: '.',
-              Command: 'bower',
-              Args: ['install', '--config.interactive=false']
-            }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'tangelo',
-      Image: 'jreeme/tangelo:1.1',
-      DockerFilePath: 'docker/tangelo',
-      Hostname: 'tangelo',
-      ExposedPorts: {
-        '80/tcp': {}
-      },
-      HostConfig: {
-        Links: ['mysql:mysql', 'loopback:loopback'],
-        PortBindings: {
-          '80/tcp': [{HostPort: '80'}]
-        }
-      }
     }
   ];
   static dockerContainerDefaultDescriptor =
@@ -115,8 +46,7 @@ export class DockerDescriptors {
     "Env": [
       "FOO=bar"
     ],
-    "Cmd": [
-    ],
+    "Cmd": [],
     "Entrypoint": "",
     "Image": "ubuntu",
     "Labels": {

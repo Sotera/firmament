@@ -4,7 +4,6 @@ const async = require('async');
 const deepExtend = require('deep-extend');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import Argv = yargs.Argv;
-import {DockerDescriptors} from "../util/docker-descriptors";
 import {ProgressBar} from "../util/progress-bar";
 interface ConsoleEx extends Console {
   table:any
@@ -48,7 +47,7 @@ export class DockerCommand extends CommandImpl {
     startCommand.aliases = ['start'];
     startCommand.commandDesc = 'Start Docker containers';
     startCommand.handler = (argv)=> {
-      this.startOrStopContainers(argv._.slice(2), true);
+      this.startOrStopContainers(argv._.slice(2), true, ()=>this.processExit());
     };
     this.subCommands.push(startCommand);
   }
@@ -58,7 +57,7 @@ export class DockerCommand extends CommandImpl {
     stopCommand.aliases = ['stop'];
     stopCommand.commandDesc = 'Stop Docker containers';
     stopCommand.handler = (argv)=> {
-      this.startOrStopContainers(argv._.slice(2), false);
+      this.startOrStopContainers(argv._.slice(2), false, ()=>this.processExit());
     };
     this.subCommands.push(stopCommand);
   }
@@ -85,17 +84,21 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb:(err:Error, results?:any)=>void) {
+  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb:(err:Error)=>void) {
     try {
-      //Check existence of Docker directory
+      //Check existence of dockerFilePath
       require('fs').statSync(dockerFilePath);
     } catch (err) {
-      cb(err);
-      return;
+      if (this.callbackIfError(cb, err)) {
+        return;
+      }
     }
-    let tar = require('tar-fs');
-    let tarStream = tar.pack(dockerFilePath);
     try {
+      let tar = require('tar-fs');
+      let tarStream = tar.pack(dockerFilePath);
+      tarStream.on('error', (err:Error)=> {
+        cb(err);
+      });
       DockerCommand.docker.buildImage(tarStream, {
         t: dockerImageName
       }, function (err, outputStream) {
@@ -131,12 +134,11 @@ export class DockerCommand extends CommandImpl {
             : null);
         });
         outputStream.on('error', function () {
-          let msg = "Error creating image: '" + dockerImageName + "'";
-          cb(new Error(msg));
+          this.callbackIfError(cb, new Error("Error creating image: '" + dockerImageName + "'"));
         });
       });
     } catch (err) {
-      cb(err);
+      this.callbackIfError(cb, err);
     }
   }
 
@@ -176,7 +178,7 @@ export class DockerCommand extends CommandImpl {
   }
 
   public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
-    var fullContainerConfigCopy = {};
+    var fullContainerConfigCopy = {ExpressApps:[]};
     //deepExtend(fullContainerConfigCopy, DockerDescriptors.dockerContainerDefaultDescriptor);
     deepExtend(fullContainerConfigCopy, containerConfig);
     DockerCommand.docker.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
@@ -202,10 +204,10 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  private startOrStopContainers(containerIds:any[], start:boolean) {
+  public startOrStopContainers(containerIds:any[], start:boolean, cb:()=>void) {
     this.getContainers(containerIds, (err:Error, containers:any[])=> {
       this.logError(err);
-      async.eachSeries(containers,
+      async.mapSeries(containers,
         (containerOrErrorMsg, cb)=> {
           if (typeof containerOrErrorMsg === 'string') {
             this.logAndCallback(containerOrErrorMsg, cb);
@@ -219,11 +221,7 @@ export class DockerCommand extends CommandImpl {
               this.logAndCallback(this.returnErrorStringOrMessage(err, resultMessage), cb);
             });
           }
-        },
-        ()=> {
-          this.processExit();
-        }
-      );
+        }, cb);
     });
   }
 
