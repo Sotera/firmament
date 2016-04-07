@@ -5,5 +5,8 @@
     "jasmine": "registry:dt/jasmine#2.2.0+20160308082659",
     "jsnlog": "registry:dt/jsnlog#2.11.0+20151114014156",
     "node": "registry:dt/node#4.0.0+20160311162451"
+  },
+  "dependencies": {
+    "lodash": "registry:npm/lodash#4.0.0+20160305082308"
   }
 }

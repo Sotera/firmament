@@ -27,6 +27,14 @@ export class CommandImpl implements Command {
     return errorMessage.length ? errorMessage : message;
   }
 
+  protected logErrors(errs:Error[], writeErrorToConsole:boolean = true):string[] {
+    let retVal:string[] = [];
+    errs.forEach(err=> {
+      retVal.push(this.logError(err, writeErrorToConsole));
+    })
+    return retVal;
+  }
+
   protected logError(err:Error, writeErrorToConsole:boolean = true):string {
     if (err) {
       if (writeErrorToConsole) {
@@ -43,9 +51,9 @@ export class CommandImpl implements Command {
   }
 
   protected callbackIfError(cb:(err:Error, result:any)=>void,
-                           err:Error = null,
-                           result:any = null):boolean {
-    if(this.logError(err)){
+                            err:Error = null,
+                            result:any = null):boolean {
+    if (this.logError(err)) {
       if (cb && (typeof cb === 'function')) {
         cb(err, result);
       }
@@ -59,7 +67,7 @@ export class CommandImpl implements Command {
                            cb:(err:Error, result:any)=>void,
                            err:Error = null,
                            result:any = null):boolean {
-    console.log(msg);
+    console.log(err ? err.message : msg);
     if (cb && (typeof cb === 'function')) {
       cb(err, result);
     }

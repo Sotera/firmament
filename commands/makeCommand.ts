@@ -2,8 +2,14 @@
 import {CommandImpl} from "./commandImpl";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
+const positive = require('positive');
+import * as _ from 'lodash';
 import {DockerDescriptors} from "../util/docker-descriptors";
 import {DockerCommand} from "./dockerCommand";
+import DockerImage = dockerode.DockerImage;
+import ContainerRemoveResults = dockerode.ContainerRemoveResults;
+import ContainerConfig = dockerode.ContainerConfig;
+import Container = dockerode.Container;
 interface ErrorEx extends Error {
   statusCode:number,
   json:string
@@ -81,13 +87,12 @@ export class MakeCommand extends CommandImpl {
     let fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
     var fs = require('fs');
     if (fs.existsSync(fullOutputPath)) {
-      var positive = require('positive');
-      if (positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n]", true)) {
+      if (positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
         MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
       } else {
         console.log('Canceling JSON template creation!');
       }
-    }else{
+    } else {
       MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
     }
     this.processExit();
@@ -105,64 +110,88 @@ export class MakeCommand extends CommandImpl {
     return path.resolve(cwd, filename);
   }
 
-  private processContainerConfigs(containerConfigs:any[]) {
+  private processContainerConfigs(containerConfigs:ContainerConfig[]) {
+    let containerConfigsByImageName = {};
+    containerConfigs.forEach(containerConfig=> {
+      containerConfigsByImageName[containerConfig.Image] = containerConfig;
+    });
     var docker = new DockerCommand();
     async.waterfall([
       //Remove all containers mentioned in config file
-      (cb:(err:Error, containerConfigs:any[])=>void)=> {
-        docker.removeContainers(containerConfigs.map(containerConfig=> {
-          return containerConfig.name;
-        }), cb);
+      (cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void)=> {
+        docker.removeContainers(containerConfigs.map(containerConfig=>containerConfig.name), cb);
       },
-      (containerRemoveResults:any[], cb:(err:Error, results:any)=>void)=> {
+      (containerRemoveResults:ContainerRemoveResults[], cb:(err:Error, missingImageNames:string[])=>void)=> {
+        docker.listImages(false, (err:Error, dockerImages:DockerImage[])=> {
+          if (this.callbackIfError(cb, err)) {
+            return;
+          }
+          let repoTags = {};
+          dockerImages.forEach(dockerImage=> {
+            repoTags[dockerImage.RepoTags[0]] = true;
+          });
+          let missingImageNames:string[] = [];
+          containerConfigs.forEach(containerConfig=> {
+            if (!repoTags[containerConfig.Image]) {
+              missingImageNames.push(containerConfig.Image);
+            }
+          });
+          cb(null, _.uniq(missingImageNames));
+        });
+      },
+      (missingImageNames:string[], cb:(err:Error, missingImageNames:string[])=>void)=> {
+        async.mapSeries(missingImageNames,
+          (missingImageName, cb:(err:Error, missingImageName:string)=>void)=> {
+            //Try to pull image
+            docker.pullImage(missingImageName, (err:Error)=> {
+              cb(null, err ? missingImageName : null);
+            });
+          },
+          (err:Error, missingImageNames:string[])=> {
+            if (this.callbackIfError(cb, err)) {
+              return;
+            }
+            cb(null, missingImageNames.filter(missingImageName=>!!missingImageName));
+          });
+      },
+      (missingImageNames:string[], cb:(err:Error, containerBuildErrors:Error[])=>void)=> {
+        async.mapSeries(missingImageNames,
+          (missingImageName, cb:(err:Error, containerBuildError:Error)=>void)=> {
+            var containerConfig = containerConfigsByImageName[missingImageName];
+            //Try to build from Dockerfile
+            let path = require('path');
+            let cwd = process.cwd();
+            let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
+            let dockerImageName = containerConfig.Image;
+            docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
+              cb(null, err
+                ? new Error('Unable to build Dockerfile at "' + dockerFilePath + '" because: ' + err.message)
+                : null);
+            });
+          },
+          (err:Error, errors:Error[])=> {
+            if (this.callbackIfError(cb, err)) {
+              return;
+            }
+            errors = errors.filter(error=>!!error);
+            cb(this.logErrors(errors).length ? new Error() : null, errors);
+          });
+      },
+      (errs:Error[], cb:(err:Error, results:any)=>void)=> {
         try {
           let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
           //Create containers in parallel
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
-              docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
-                if (err) {
-                  if (err.statusCode === 404) {
-                    //Try to pull image
-                    docker.pullImage(containerConfig, (err:Error)=> {
-                      if (err) {
-                        //Try to build from Dockerfile
-                        let path = require('path');
-                        let cwd = process.cwd();
-                        let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
-                        let dockerImageName = containerConfig.Image;
-                        docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
-                          if (err) {
-                            cb(new Error('Unable to build Dockerfile at "' + dockerFilePath + '"'), null);
-                            return;
-                          }
-                          //Try to create built container
-                          docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
-                            this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
-                          });
-                        });
-                      } else {
-                        //Try to create pulled container
-                        docker.createContainer(containerConfig, (err:ErrorEx, container:any)=> {
-                          this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
-                        });
-                      }
-                    });
-                  } else {
-                    cb(err, null);
-                  }
-                } else {
-                  this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
-                }
+              docker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
+                this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
               });
             },
-            (err:Error, results:any[])=> {
+            (err:Error, containers:Container[])=> {
               if (this.callbackIfError(cb, err)) {
                 return;
               }
-              let sortedContainerNames = sortedContainerConfigs.map(containerConfig=> {
-                return containerConfig.name;
-              });
+              let sortedContainerNames = sortedContainerConfigs.map(containerConfig=>containerConfig.name);
               docker.startOrStopContainers(sortedContainerNames, true, ()=> {
                 cb(null, null);
               });
@@ -170,7 +199,7 @@ export class MakeCommand extends CommandImpl {
             (err:Error, results:any[])=> {
             }
           );
-        }catch(err){
+        } catch (err) {
           this.callbackIfError(cb, err);
         }
       }

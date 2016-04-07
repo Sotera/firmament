@@ -2,9 +2,13 @@
 import {CommandImpl} from "./commandImpl";
 const async = require('async');
 const deepExtend = require('deep-extend');
+const positive = require('positive');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import Argv = yargs.Argv;
+import * as _ from 'lodash';
 import {ProgressBar} from "../util/progress-bar";
+import ContainerRemoveResults = dockerode.ContainerRemoveResults;
+import DockerImage = dockerode.DockerImage;
 interface ConsoleEx extends Console {
   table:any
 }
@@ -35,7 +39,7 @@ export class DockerCommand extends CommandImpl {
     removeCommand.aliases = ['rm'];
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
-      this.removeContainers(argv._.slice(2), (err, results)=> {
+      this.removeContainers(argv._.slice(2), (err:Error, msg:string)=> {
         this.processExit(0);
       });
     };
@@ -142,8 +146,8 @@ export class DockerCommand extends CommandImpl {
     }
   }
 
-  public pullImage(containerConfig:any, cb:(err:Error)=>void) {
-    DockerCommand.docker.pull(containerConfig.Image,
+  public pullImage(imageName:string, cb:(err:Error)=>void) {
+    DockerCommand.docker.pull(imageName,
       (err, outputStream)=> {
         let error:Error = null;
         if (err) {
@@ -171,14 +175,14 @@ export class DockerCommand extends CommandImpl {
           cb(error);
         });
         outputStream.on('error', function () {
-          let msg = "Unable to pull image: '" + containerConfig.Image + "'";
+          let msg = "Unable to pull image: '" + imageName + "'";
           cb(new Error(msg));
         });
       });
   }
 
   public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
-    var fullContainerConfigCopy = {ExpressApps:[]};
+    var fullContainerConfigCopy = {ExpressApps: []};
     //deepExtend(fullContainerConfigCopy, DockerDescriptors.dockerContainerDefaultDescriptor);
     deepExtend(fullContainerConfigCopy, containerConfig);
     DockerCommand.docker.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
@@ -186,8 +190,21 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  public removeContainers(containerIds:any[], cb:(err:Error, results)=>void) {
-    var self = this;
+  public removeContainers(containerIds:string[],
+                          cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void) {
+    let self = this;
+    if(!containerIds.length){
+      console.log('Specify containers to remove by FirmamentId, Docker ID or Name. Or "*" to remove all.')
+      return;
+    }
+    if(_.indexOf(containerIds, 'all') !== -1){
+      if (!positive("You're sure you want to remove all containers? [y/N] ", false)) {
+        console.log( 'Operation canceled.')
+        cb(null, null);
+        return;
+      }
+      containerIds = null;
+    }
     this.getContainers(containerIds, (err:Error, containers:any[])=> {
       this.logError(err);
       async.map(containers,
@@ -197,7 +214,7 @@ export class DockerCommand extends CommandImpl {
           } else {
             containerOrErrorMsg.remove({force: 1}, (err:Error)=> {
               var msg = 'Removing container "' + containerOrErrorMsg.name + '"';
-              self.logAndCallback(msg, cb, err, {msg});
+              self.logAndCallback(msg, cb, err, {msg: containerOrErrorMsg.name});
             });
           }
         }, cb);
@@ -226,14 +243,25 @@ export class DockerCommand extends CommandImpl {
   }
 
   private getContainers(ids:string[], cb:(err:Error, containers:any[])=>void) {
+    if(!ids){
+      this.listContainers(true,(err:Error,containers:any[])=>{
+        if (this.callbackIfError(cb, err)) {
+          return;
+        }
+        ids = [];
+        containers.forEach(container=>{
+          ids.push(container.firmamentId);
+        });
+        this.getContainers(ids, cb);
+      });
+      return;
+    }
     let fnArray = ids.map(id=> {
       return async.apply(this.getContainer.bind(this), id.toString());
     });
     async.series(fnArray, (err:Error, results:any[])=> {
       if (!this.callbackIfError(cb, err)) {
-        cb(err, results.filter(result=> {
-          return result;
-        }));
+        cb(err, results.filter(result=>result));
       }
     });
   }
@@ -273,6 +301,26 @@ export class DockerCommand extends CommandImpl {
         }
       ],
       cb);
+  }
+
+  public listImages(listAllImages:boolean = false, cb:(err:Error, images:DockerImage[])=>void) {
+    DockerCommand.docker.listImages({all: listAllImages}, (err:Error, images:DockerImage[])=> {
+      if (this.callbackIfError(cb, err)) {
+        return;
+      }
+      //Sort by name so firmament id is consistent
+      images.sort(function (a, b) {
+        return a.RepoTags[0].localeCompare(b.RepoTags[0]);
+      });
+      let firmamentId = 0;
+      images = images.map((image:DockerImage)=> {
+        image.firmamentId = (++firmamentId).toString();
+        return image;
+      }).filter((image:DockerImage)=> {
+        return image !== null;
+      });
+      cb(null, images);
+    });
   }
 
   private listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
