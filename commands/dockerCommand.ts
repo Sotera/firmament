@@ -3,12 +3,14 @@ import {CommandImpl} from "./commandImpl";
 const async = require('async');
 const deepExtend = require('deep-extend');
 const positive = require('positive');
+const childProcess = require('child_process');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 import Argv = yargs.Argv;
 import * as _ from 'lodash';
 import {ProgressBar} from "../util/progress-bar";
 import ContainerRemoveResults = dockerode.ContainerRemoveResults;
 import DockerImage = dockerode.DockerImage;
+import Container = dockerode.Container;
 interface ConsoleEx extends Console {
   table:any
 }
@@ -32,6 +34,7 @@ export class DockerCommand extends CommandImpl {
     this.pushStartCommand();
     this.pushStopCommand();
     this.pushRemoveCommand();
+    this.pushShellCommand();
   }
 
   private pushRemoveCommand() {
@@ -39,11 +42,23 @@ export class DockerCommand extends CommandImpl {
     removeCommand.aliases = ['rm'];
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
-      this.removeContainers(argv._.slice(2), (err:Error, msg:string)=> {
+      this.removeContainers(argv._.slice(2), (err:Error, containerRemoveResults:ContainerRemoveResults[])=> {
         this.processExit(0);
       });
     };
     this.subCommands.push(removeCommand);
+  }
+
+  private pushShellCommand() {
+    let shellCommand = new CommandImpl();
+    shellCommand.aliases = ['sh'];
+    shellCommand.commandDesc = 'Run bash shell in Docker container',
+      shellCommand.handler = (argv)=> {
+        this.bashInToContainer(argv._.slice(2), (err:Error, exitCode:number = 0)=> {
+          this.processExit(exitCode, err ? err.message : '');
+        });
+      };
+    this.subCommands.push(shellCommand);
   }
 
   private pushStartCommand() {
@@ -193,13 +208,13 @@ export class DockerCommand extends CommandImpl {
   public removeContainers(containerIds:string[],
                           cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void) {
     let self = this;
-    if(!containerIds.length){
+    if (!containerIds.length) {
       console.log('Specify containers to remove by FirmamentId, Docker ID or Name. Or "*" to remove all.')
       return;
     }
-    if(_.indexOf(containerIds, 'all') !== -1){
+    if (_.indexOf(containerIds, 'all') !== -1) {
       if (!positive("You're sure you want to remove all containers? [y/N] ", false)) {
-        console.log( 'Operation canceled.')
+        console.log('Operation canceled.')
         cb(null, null);
         return;
       }
@@ -242,14 +257,32 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
+  private bashInToContainer(ids:string[], cb:(err:Error, exitCode?:number)=>void) {
+    if (ids.length !== 1) {
+      let msg = '\nSpecify container to shell into by FirmamentId, Docker ID or Name.\n';
+      msg += '\nExample: $ ... d sh 2  <= Open bash shell in container with FirmamentId "2"\n';
+      cb(new Error(msg));
+      return;
+    }
+    this.getContainer(ids[0].toString(), (err:Error, container:Container)=> {
+      if (this.callbackIfError(cb, err)) {
+        return;
+      }
+      childProcess.spawnSync('docker', ['exec', '-it', container.name.slice(1), '/bin/bash'], {
+        stdio: 'inherit'
+      });
+      cb(null, 0);
+    });
+  }
+
   private getContainers(ids:string[], cb:(err:Error, containers:any[])=>void) {
-    if(!ids){
-      this.listContainers(true,(err:Error,containers:any[])=>{
+    if (!ids) {
+      this.listContainers(true, (err:Error, containers:any[])=> {
         if (this.callbackIfError(cb, err)) {
           return;
         }
         ids = [];
-        containers.forEach(container=>{
+        containers.forEach(container=> {
           ids.push(container.firmamentId);
         });
         this.getContainers(ids, cb);

@@ -3,6 +3,7 @@ import {CommandImpl} from "./commandImpl";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const positive = require('positive');
+const childProcess = require('child_process');
 import * as _ from 'lodash';
 import {DockerDescriptors} from "../util/docker-descriptors";
 import {DockerCommand} from "./dockerCommand";
@@ -10,6 +11,8 @@ import DockerImage = dockerode.DockerImage;
 import ContainerRemoveResults = dockerode.ContainerRemoveResults;
 import ContainerConfig = dockerode.ContainerConfig;
 import Container = dockerode.Container;
+import ExpressApp = dockerode.ExpressApp;
+import SpawnOptions = dockerode.SpawnOptions;
 interface ErrorEx extends Error {
   statusCode:number,
   json:string
@@ -111,6 +114,7 @@ export class MakeCommand extends CommandImpl {
   }
 
   private processContainerConfigs(containerConfigs:ContainerConfig[]) {
+    let self = this;
     let containerConfigsByImageName = {};
     containerConfigs.forEach(containerConfig=> {
       containerConfigsByImageName[containerConfig.Image] = containerConfig;
@@ -123,7 +127,7 @@ export class MakeCommand extends CommandImpl {
       },
       (containerRemoveResults:ContainerRemoveResults[], cb:(err:Error, missingImageNames:string[])=>void)=> {
         docker.listImages(false, (err:Error, dockerImages:DockerImage[])=> {
-          if (this.callbackIfError(cb, err)) {
+          if (self.callbackIfError(cb, err)) {
             return;
           }
           let repoTags = {};
@@ -148,7 +152,7 @@ export class MakeCommand extends CommandImpl {
             });
           },
           (err:Error, missingImageNames:string[])=> {
-            if (this.callbackIfError(cb, err)) {
+            if (self.callbackIfError(cb, err)) {
               return;
             }
             cb(null, missingImageNames.filter(missingImageName=>!!missingImageName));
@@ -170,74 +174,79 @@ export class MakeCommand extends CommandImpl {
             });
           },
           (err:Error, errors:Error[])=> {
-            if (this.callbackIfError(cb, err)) {
+            if (self.callbackIfError(cb, err)) {
               return;
             }
             errors = errors.filter(error=>!!error);
-            cb(this.logErrors(errors).length ? new Error() : null, errors);
+            cb(self.logErrors(errors).length ? new Error() : null, errors);
           });
       },
       (errs:Error[], cb:(err:Error, results:any)=>void)=> {
         try {
-          let sortedContainerConfigs = this.containerDependencySort(containerConfigs);
+          let sortedContainerConfigs = self.containerDependencySort(containerConfigs);
           //Create containers in parallel
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
               docker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
-                this.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
+                self.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
               });
             },
             (err:Error, containers:Container[])=> {
-              if (this.callbackIfError(cb, err)) {
+              if (self.callbackIfError(cb, err)) {
                 return;
               }
               let sortedContainerNames = sortedContainerConfigs.map(containerConfig=>containerConfig.name);
               docker.startOrStopContainers(sortedContainerNames, true, ()=> {
                 cb(null, null);
               });
-            },
-            (err:Error, results:any[])=> {
             }
           );
         } catch (err) {
-          this.callbackIfError(cb, err);
+          self.callbackIfError(cb, err);
         }
+      },
+      function deployExpressApps(errs:Error[], cb:(err:Error, results:any)=>void) {
+        async.mapSeries(containerConfigs,
+          (containerConfig:ContainerConfig, cb:(err:Error, result:any)=>void)=> {
+            async.mapSeries(containerConfig.ExpressApps || [],
+              (expressApp:ExpressApp, cb:(err:Error, result:any)=>void)=> {
+                async.series([
+                    (cb:(err:Error, result:any)=>void)=> {
+                      let cwd = process.cwd();
+                      expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
+                      self.gitClone(expressApp.GitUrl,
+                        expressApp.GitSrcBranchName,
+                        expressApp.GitCloneFolder, (err:Error)=> {
+                          self.logError(err);
+                          cb(null, null);
+                        });
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {
+                      async.mapSeries(expressApp.Scripts || [],
+                        (script, cb:(err:Error, result:any)=>void)=> {
+                          let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
+                          self.spawnShellCommand(script.Command, script.Args, {cwd, stdio: null}, cb);
+                        },
+                        (err:Error, results:any)=> {
+                          cb(null, null);
+                        });
+                    }
+                  ],
+                  (err:Error, results:any)=> {
+                    cb(null, null);
+                  });
+              },
+              (err:Error, results:any)=> {
+                cb(null, null);
+              });
+          },
+          (err:Error, results:any)=> {
+            cb(null, null);
+          });
       }
     ], (err:Error, results:string)=> {
-      this.processExit();
+      self.processExit();
     });
-    /*  sortedContainerConfigs.forEach(function (containerConfig) {
-     if (!containerConfig.ExpressApps) {
-     return;
-     }
-     containerConfig.ExpressApps.forEach(function (expressApp) {
-     try {
-     expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
-     wait.for(make_GitClone, expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder);
-     wait.for(make_ExecuteExpressAppBuildScripts, expressApp);
-     } catch (ex) {
-     util_Fatal(ex);
-     }
-     });
-     containerConfig.ExpressApps.forEach(function (expressApp) {
-     //At this time (11-JUN-2015) running scripts in npm package.json files blows slc deployment
-     //(the app uploads but is not startable) when running a 'prepublish:' bower script. Since
-     //this is a pretty popular thing to do we're opting to not allow scripts to be run for now.
-     //var argv = ['--scripts'];
-     var argv = [];
-     argv.unshift(process.argv[1]);
-     argv.unshift(process.argv[0]);
-     wait.for(make_StrongBuild, argv, expressApp.GitCloneFolder);
-     });
-     containerConfig.ExpressApps.forEach(function (expressApp) {
-     var strongLoopServerUrl = expressApp.StrongLoopServerUrl || 'http://localhost:8701';
-     var url = requireCache('url');
-     var path = requireCache('path');
-     var serviceName = expressApp.ServiceName || path.basename(url.parse(expressApp.GitUrl).path);
-     var strongLoopBranchName = expressApp.StrongLoopBranchName || 'deploy';
-     wait.for(make_StrongDeploy, expressApp.GitCloneFolder, strongLoopServerUrl, serviceName, strongLoopBranchName);
-     });
-     });*/
   }
 
   private static writeJsonTemplateFile(fullOutputPath:string, writeFullTemplate:boolean) {
@@ -304,6 +313,19 @@ export class MakeCommand extends CommandImpl {
       throw new Error('Linked container dependency sort failed. You are probably trying to link to an unknown container.');
     }
     return sorted;
+  }
+
+  private gitClone(gitUrl:string, gitBranch:string, localFolder:string, cb:(err:Error, child:any)=>void) {
+    this.spawnShellCommand('git', ['clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
+  }
+
+  private spawnShellCommand(command:string, args:string[], options:SpawnOptions, cb:(err:Error, result:any)=>void) {
+    options = options || {stdio: 'inherit', cwd: null};
+    options.stdio = options.stdio || 'inherit';
+    let child = childProcess.spawnSync(command, args, options);
+    process.nextTick(()=> {
+      cb(child.error, child);
+    });
   }
 }
 

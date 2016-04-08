@@ -2,7 +2,7 @@ export class DockerDescriptors {
   static dockerContainerConfigTemplate = [
     {
       name: 'mongo',
-      Image: 'jreeme/mongo:2.6',
+      Image: 'mongo:2.6',
       DockerFilePath: 'docker/mongo/2.6',
       Hostname: 'mongo',
       HostConfig: {}
@@ -27,7 +27,7 @@ export class DockerDescriptors {
           GitSrcBranchName: 'master',
           StrongLoopBranchName: 'deploy',
           StrongLoopServerUrl: 'http://localhost:8701',
-          ServiceName: 'DatawakeManager-Loopback'
+          ServiceName: 'DatawakeDepot'
         }
       ]
     }
