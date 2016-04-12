@@ -1,10 +1,9 @@
-import {CommandImpl} from 'firmament-yargs';
+import {CommandImpl, CommandLineImpl} from 'firmament-yargs';
 const async = require('async');
 const deepExtend = require('deep-extend');
 const positive = require('positive');
 const childProcess = require('child_process');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
-import Argv = yargs.Argv;
 import * as _ from 'lodash';
 import {ProgressBar} from "../util/progress-bar";
 import ContainerRemoveResults = dockerode.ContainerRemoveResults;
@@ -21,7 +20,6 @@ export class DockerCommand extends CommandImpl {
   constructor() {
     log.trace('Constructing DockerCommand instance');
     super();
-    this.setupConsoleTable();
     this.buildCommandTree();
   }
 
@@ -74,7 +72,7 @@ export class DockerCommand extends CommandImpl {
     let stopCommand = new CommandImpl();
     stopCommand.aliases = ['stop'];
     stopCommand.commandDesc = 'Stop Docker containers';
-    stopCommand.handler = (argv)=> {
+    stopCommand.handler = argv=> {
       this.startOrStopContainers(argv._.slice(2), false, ()=>this.processExit());
     };
     this.subCommands.push(stopCommand);
@@ -92,13 +90,13 @@ export class DockerCommand extends CommandImpl {
         desc: 'Show non-running containers also'
       }
     };
-    psCommand.handler = (argv:yargs.Argv)=> this.printContainerList(argv);
+    psCommand.handler = argv=> this.printContainerList(argv, ()=>this.processExit());
     this.subCommands.push(psCommand);
   }
 
-  private printContainerList(argv:any) {
+  private printContainerList(argv:any, cb:()=>void) {
     this.listContainers(argv.a, (err, containers)=> {
-      this.prettyPrintDockerContainerList(err, containers, argv.a);
+      this.prettyPrintDockerContainerList(err, containers, argv.a, cb);
     });
   }
 
@@ -375,12 +373,12 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean) {
+  private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean, cb:()=>void) {
     if (!containers || !containers.length) {
-      this.processExit(0,
-        this.returnErrorStringOrMessage(err, '\nNo ' + (all ? '' : 'Running ') + 'Containers\n'));
+      let msg = this.returnErrorStringOrMessage(err, '\nNo ' + (all ? '' : 'Running ') + 'Containers\n');
+      console.log(msg);
     } else {
-      console.table(containers.map(container=> {
+      CommandLineImpl.printTable(containers.map(container=> {
         return {
           ID: container.firmamentId,
           Name: container.Names[0],
@@ -389,85 +387,8 @@ export class DockerCommand extends CommandImpl {
           Status: container.Status
         };
       }));
-      this.processExit();
     }
-  }
-
-  private setupConsoleTable() {
-    if (typeof console === 'undefined') {
-      throw new Error('Weird, console object is undefined');
-    }
-    if (typeof console.table === 'function') {
-      return;
-    }
-    let Table = require('easy-table');
-
-    function arrayToString(arr) {
-      let t = new Table();
-      arr.forEach(record=> {
-        if (typeof record === 'string' ||
-          typeof record === 'number') {
-          t.cell('item', record);
-        } else {
-          // assume plain object
-          Object.keys(record).forEach(property=> {
-            t.cell(property, record[property]);
-          });
-        }
-        t.newRow();
-      });
-      return t.toString();
-    }
-
-    function printTitleTable(title, arr) {
-      let str = arrayToString(arr);
-      let rowLength = str.indexOf('\n');
-      if (rowLength > 0) {
-        if (title.length > rowLength) {
-          rowLength = title.length;
-        }
-        console.log(title);
-        let sep = '-', k, line = '';
-        for (k = 0; k < rowLength; k += 1) {
-          line += sep;
-        }
-        console.log(line);
-      }
-      console.log(str);
-    }
-
-    function objectToArray(obj) {
-      let keys = Object.keys(obj);
-      return keys.map(key=> {
-        return {
-          key: key,
-          value: obj[key]
-        };
-      });
-    }
-
-    function objectToString(obj) {
-      return arrayToString(objectToArray(obj));
-    }
-
-    console.table = function () {
-      console.log('');
-      let args = Array.prototype.slice.call(arguments);
-      if (args.length === 2 &&
-        typeof args[0] === 'string' &&
-        Array.isArray(args[1])) {
-        return printTitleTable(args[0], args[1]);
-      }
-      args.forEach(k=> {
-        if (typeof k === 'string') {
-          return console.log(k);
-        } else if (Array.isArray(k)) {
-          console.log(arrayToString(k));
-        } else if (typeof k === 'object') {
-          console.log(objectToString(k));
-        }
-      });
-    };
+    cb();
   }
 }
 
