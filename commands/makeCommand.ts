@@ -1,5 +1,4 @@
-///<reference path="commandImpl.ts"/>
-import {CommandImpl} from "./commandImpl";
+import {CommandImpl} from 'firmament-yargs';
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const positive = require('positive');
@@ -230,6 +229,16 @@ export class MakeCommand extends CommandImpl {
                         (err:Error, results:any)=> {
                           cb(null, null);
                         });
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {
+                      let cwd = expressApp.GitCloneFolder;
+                      console.log('StrongLoop Building @ ' + cwd);
+                      self.spawnShellCommand('slc', ['build'], {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {
+                      let cwd = expressApp.GitCloneFolder;
+                      console.log('StrongLoop Deploying @ ' + cwd);
+                      self.spawnShellCommand('slc', ['deploy', expressApp.StrongLoopServerUrl], {cwd, stdio: null}, cb);
                     }
                   ],
                   (err:Error, results:any)=> {

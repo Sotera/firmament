@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-import {CommandLine} from './util/command-line';
+import {CommandLineImpl} from 'firmament-yargs';
 import {MakeCommand} from './commands/makeCommand';
 import {DockerCommand} from './commands/dockerCommand';
-const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
-var commandLine = new CommandLine();
-commandLine.addCommandSpec(new MakeCommand());
-commandLine.addCommandSpec(new DockerCommand());
+var commandLine = new CommandLineImpl();
+commandLine.addCommand(new MakeCommand());
+commandLine.addCommand(new DockerCommand());
 commandLine.exec();
 

@@ -8,26 +8,58 @@ export class DockerDescriptors {
       HostConfig: {}
     },
     {
-      name: 'strongloop',
-      Image: 'strongloop/strong-pm:node-5',
-      Hostname: 'strongloop',
+      name: 'firmament-test-server',
+      Image: 'jreeme/strong-pm:node-5',
+      DockerFilePath: 'docker/strong-pm',
+      Hostname: 'firmament-test-server',
       HostConfig: {
         Links: ['mongo:mongo'],
         PortBindings: {
-          '3000/tcp': [{HostPort: '3000'}],
-          '3001/tcp': [{HostPort: '3001'}],
-          '3002/tcp': [{HostPort: '3002'}],
-          '3003/tcp': [{HostPort: '3003'}],
+          '3001/tcp': [{HostPort: '4001'}],
           '8701/tcp': [{HostPort: '8701'}]
         }
       },
       ExpressApps: [
         {
-          GitUrl: 'https://github.com/Sotera/DatawakeDepot',
+          GitUrl: 'https://github.com/jreeme/FirmamentTestServer',
           GitSrcBranchName: 'master',
           StrongLoopBranchName: 'deploy',
           StrongLoopServerUrl: 'http://localhost:8701',
-          ServiceName: 'DatawakeDepot'
+          ServiceName: 'FirmamentTestServer'
+        }
+      ]
+    },
+    {
+      name: 'firmament-test-app',
+      Image: 'jreeme/strong-pm:node-5',
+      DockerFilePath: 'docker/strong-pm',
+      Hostname: 'firmament-test-app',
+      HostConfig: {
+        Links: ['firmament-test-server:firmament-test-server'],
+        PortBindings: {
+          '3001/tcp': [{HostPort: '3001'}],
+          '3002/tcp': [{HostPort: '3002'}],
+          '3003/tcp': [{HostPort: '3003'}],
+          '8701/tcp': [{HostPort: '8702'}]
+        }
+      },
+      ExpressApps: [
+        {
+          GitUrl: 'https://github.com/jreeme/FirmamentTestApp',
+          GitSrcBranchName: 'master',
+          StrongLoopBranchName: 'deploy',
+          StrongLoopServerUrl: 'http://localhost:8702',
+          ServiceName: 'FirmamentTestApp',
+          'Scripts': [
+            {
+              "RelativeWorkingDir": ".",
+              "Command": "bower",
+              "Args": [
+                "install",
+                "--config.interactive=false"
+              ]
+            }
+          ]
         }
       ]
     }

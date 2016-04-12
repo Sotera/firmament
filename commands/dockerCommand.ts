@@ -1,5 +1,4 @@
-///<reference path="commandImpl.ts"/>
-import {CommandImpl} from "./commandImpl";
+import {CommandImpl} from 'firmament-yargs';
 const async = require('async');
 const deepExtend = require('deep-extend');
 const positive = require('positive');
