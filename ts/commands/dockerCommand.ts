@@ -1,25 +1,28 @@
 import {CommandImpl, CommandLineImpl} from 'firmament-yargs';
+import {ProgressBar, ProgressBarImpl} from 'firmament-yargs';
+import * as _ from 'lodash';
+import ContainerRemoveResults = dockerode.ContainerRemoveResults;
+import DockerImage = dockerode.DockerImage;
+import Container = dockerode.Container;
+import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
+import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
 const async = require('async');
 const deepExtend = require('deep-extend');
 const positive = require('positive');
 const childProcess = require('child_process');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
-import * as _ from 'lodash';
-import {ProgressBar} from "../util/progress-bar";
-import ContainerRemoveResults = dockerode.ContainerRemoveResults;
-import DockerImage = dockerode.DockerImage;
-import Container = dockerode.Container;
 interface ConsoleEx extends Console {
   table:any
 }
 declare let console:ConsoleEx;
 export class DockerCommand extends CommandImpl {
+  private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
   static docker = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
-  static progressBar = new ProgressBar();
+  static progressBar:ProgressBar = new ProgressBarImpl();
 
   constructor() {
-    log.trace('Constructing DockerCommand instance');
     super();
+    log.trace('Constructing DockerCommand instance');
     this.buildCommandTree();
   }
 
