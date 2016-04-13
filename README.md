@@ -7,7 +7,7 @@ Provides a simplified configuration of interconnected [Docker containers](https:
 # How To Get firmament
 ```Bash
 $ wget https://github.com/sotera/firmament/raw/master/install-scripts/prep-ubuntu14.04.sh
-$ sudo chmod 700 prep_ubuntu14.04.sh
+$ sudo chmod 700 prep-ubuntu14.04.sh
 $ sudo su
 $ ./prep_ubuntu14.04.sh
 exit
