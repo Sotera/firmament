@@ -16,7 +16,7 @@ echo deb http://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/dock
 apt-key adv --keyserver pgp.mit.edu --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
 apt-get update
 apt-get install -y lxc-docker-1.6.0
-usermod -aG docker jreeme
+usermod -aG docker ubuntu
 cd node-v0.12.4
 ./configure
 make
