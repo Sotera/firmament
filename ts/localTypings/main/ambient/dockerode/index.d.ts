@@ -10,8 +10,7 @@ declare module dockerode {
     id:string,
     name:string
   }
-  
-  export interface SpawnOptions{
+  export interface SpawnOptions {
     cwd:string,
     stdio:string
   }
@@ -28,6 +27,9 @@ declare module dockerode {
     ServiceName:string,
     GitCloneFolder:string,
     Scripts:Script[]
+  }
+  export interface DockerOde {
+    listImages(options:any, cb:(err:Error, images:DockerImage[])=>void):void;
   }
   export interface ContainerConfig {
     name:string,

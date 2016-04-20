@@ -30,6 +30,7 @@ export class DockerCommand extends CommandImpl {
     this.aliases = ['docker', 'd'];
     this.command = '<subCommand>';
     this.commandDesc = 'Support for working with Docker containers';
+    this.pushImagesCommand();
     this.pushPsCommand();
     this.pushStartCommand();
     this.pushStopCommand();
@@ -81,6 +82,22 @@ export class DockerCommand extends CommandImpl {
     this.subCommands.push(stopCommand);
   }
 
+  private pushImagesCommand() {
+    let imagesCommand = new CommandImpl();
+    imagesCommand.aliases = ['images'];
+    imagesCommand.commandDesc = 'List Docker images';
+    imagesCommand.options = {
+      all: {
+        alias: 'a',
+        boolean: true,
+        default: false,
+        desc: 'Show intermediate images also'
+      }
+    };
+    imagesCommand.handler = argv=> this.printImagesList(argv, ()=>this.processExit());
+    this.subCommands.push(imagesCommand);
+  }
+
   private pushPsCommand() {
     let psCommand = new CommandImpl();
     psCommand.aliases = ['ps'];
@@ -95,6 +112,12 @@ export class DockerCommand extends CommandImpl {
     };
     psCommand.handler = argv=> this.printContainerList(argv, ()=>this.processExit());
     this.subCommands.push(psCommand);
+  }
+
+  private printImagesList(argv:any, cb:()=>void) {
+    this.firmamentDocker.listImages(argv.a, (err, images)=> {
+      this.prettyPrintDockerImagesList(err, images, cb);
+    });
   }
 
   private printContainerList(argv:any, cb:()=>void) {
@@ -336,25 +359,9 @@ export class DockerCommand extends CommandImpl {
       cb);
   }
 
-  public listImages(listAllImages:boolean = false, cb:(err:Error, images:DockerImage[])=>void) {
-    DockerCommand.docker.listImages({all: listAllImages}, (err:Error, images:DockerImage[])=> {
-      if (this.callbackIfError(cb, err)) {
-        return;
-      }
-      //Sort by name so firmament id is consistent
-      images.sort(function (a, b) {
-        return a.RepoTags[0].localeCompare(b.RepoTags[0]);
-      });
-      let firmamentId = 0;
-      images = images.map((image:DockerImage)=> {
-        image.firmamentId = (++firmamentId).toString();
-        return image;
-      }).filter((image:DockerImage)=> {
-        return image !== null;
-      });
-      cb(null, images);
-    });
-  }
+/*  public listImages(listAllImages:boolean = false, cb:(err:Error, images:DockerImage[])=>void) {
+    this.firmamentDocker.listImages(listAllImages,cb);
+  }*/
 
   private listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
     DockerCommand.docker.listContainers({all: true}, (err:Error, allContainers:any[])=> {
@@ -374,6 +381,33 @@ export class DockerCommand extends CommandImpl {
       });
       cb(null, containers);
     });
+  }
+
+  private prettyPrintDockerImagesList(err:Error, images:any[], cb:()=>void) {
+    if (!images || !images.length) {
+      let msg = this.returnErrorStringOrMessage(err, '\nNo images\n');
+      console.log(msg);
+    } else {
+      var timeAgo = require('time-ago')();
+      var fileSize = require('filesize');
+      CommandLineImpl.printTable(images.map(container=> {
+        try {
+          var ID = container.firmamentId;
+          var xxx = container.RepoTags[0].split(':');
+          var Repository = xxx[0];
+          var Tag = xxx[1];
+          var ImageId = container.Id.substring(7, 19);
+          var nowTicks = +new Date();
+          var tickDiff = nowTicks - (1000 * container.Created);
+          var Created = timeAgo.ago(nowTicks - tickDiff);
+          var Size = fileSize(container.Size);
+        } catch (err) {
+          console.log(err.message);
+        }
+        return {ID, Repository, Tag, ImageId, Created, Size};
+      }));
+    }
+    cb();
   }
 
   private prettyPrintDockerContainerList(err:Error, containers:any[], all:boolean, cb:()=>void) {

@@ -1,13 +1,15 @@
 import {FirmamentDocker} from "../interfaces/firmament-docker";
 import {CommandImpl} from 'firmament-yargs';
 import DockerImage = dockerode.DockerImage;
-const dockerode = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
+import DockerOde = dockerode.DockerOde;
 export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
+  private dockerode:DockerOde;
   constructor(){
     super();
+    this.dockerode = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
   }
   listImages(listAllImages:boolean, cb:(err:Error, images:dockerode.DockerImage[])=>void) {
-    dockerode.listImages({all: listAllImages}, (err:Error, images:DockerImage[])=> {
+    this.dockerode.listImages({all: listAllImages}, (err:Error, images:DockerImage[])=> {
       if (this.callbackIfError(cb, err)) {
         return;
       }

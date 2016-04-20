@@ -12,6 +12,8 @@ import ContainerConfig = dockerode.ContainerConfig;
 import Container = dockerode.Container;
 import ExpressApp = dockerode.ExpressApp;
 import SpawnOptions = dockerode.SpawnOptions;
+import {FirmamentDockerImpl} from "../../js/modules/firmament-docker/implementations/firmament-docker-impl";
+import {FirmamentDocker} from "../../js/modules/firmament-docker/interfaces/firmament-docker";
 interface ErrorEx extends Error {
   statusCode:number,
   json:string
@@ -19,6 +21,7 @@ interface ErrorEx extends Error {
 export class MakeCommand extends CommandImpl {
   static defaultConfigFilename = 'firmament.json';
   static jsonFileExtension = '.json';
+  private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
 
   constructor() {
     super();
@@ -125,12 +128,12 @@ export class MakeCommand extends CommandImpl {
         docker.removeContainers(containerConfigs.map(containerConfig=>containerConfig.name), cb);
       },
       (containerRemoveResults:ContainerRemoveResults[], cb:(err:Error, missingImageNames:string[])=>void)=> {
-        docker.listImages(false, (err:Error, dockerImages:DockerImage[])=> {
+        this.firmamentDocker.listImages(false, (err, images)=> {
           if (self.callbackIfError(cb, err)) {
             return;
           }
           let repoTags = {};
-          dockerImages.forEach(dockerImage=> {
+          images.forEach(dockerImage=> {
             repoTags[dockerImage.RepoTags[0]] = true;
           });
           let missingImageNames:string[] = [];
