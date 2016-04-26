@@ -12,8 +12,8 @@ import ContainerConfig = dockerode.ContainerConfig;
 import Container = dockerode.Container;
 import ExpressApp = dockerode.ExpressApp;
 import SpawnOptions = dockerode.SpawnOptions;
-import {FirmamentDockerImpl} from "../../js/modules/firmament-docker/implementations/firmament-docker-impl";
-import {FirmamentDocker} from "../../js/modules/firmament-docker/interfaces/firmament-docker";
+import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
+import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
 interface ErrorEx extends Error {
   statusCode:number,
   json:string
@@ -125,7 +125,7 @@ export class MakeCommand extends CommandImpl {
     async.waterfall([
       //Remove all containers mentioned in config file
       (cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void)=> {
-        docker.removeContainers(containerConfigs.map(containerConfig=>containerConfig.name), cb);
+        this.firmamentDocker.removeContainers(containerConfigs.map(containerConfig=>containerConfig.name), cb);
       },
       (containerRemoveResults:ContainerRemoveResults[], cb:(err:Error, missingImageNames:string[])=>void)=> {
         this.firmamentDocker.listImages(false, (err, images)=> {
@@ -198,7 +198,7 @@ export class MakeCommand extends CommandImpl {
                 return;
               }
               let sortedContainerNames = sortedContainerConfigs.map(containerConfig=>containerConfig.name);
-              docker.startOrStopContainers(sortedContainerNames, true, ()=> {
+              this.firmamentDocker.startOrStopContainers(sortedContainerNames, true, ()=> {
                 cb(null, null);
               });
             }

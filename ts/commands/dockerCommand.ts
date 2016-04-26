@@ -1,5 +1,4 @@
-import {CommandImpl, CommandLineImpl} from 'firmament-yargs';
-import {ProgressBar, ProgressBarImpl} from 'firmament-yargs';
+import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
 import * as _ from 'lodash';
 import ContainerRemoveResults = dockerode.ContainerRemoveResults;
 import DockerImage = dockerode.DockerImage;
@@ -43,7 +42,8 @@ export class DockerCommand extends CommandImpl {
     removeCommand.aliases = ['rm'];
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
-      this.removeContainers(argv._.slice(2), (err:Error, containerRemoveResults:ContainerRemoveResults[])=> {
+      this.firmamentDocker.removeContainers(argv._.slice(2),
+        (err:Error, containerRemoveResults:ContainerRemoveResults[])=> {
         this.processExit(0);
       });
     };
@@ -67,7 +67,7 @@ export class DockerCommand extends CommandImpl {
     startCommand.aliases = ['start'];
     startCommand.commandDesc = 'Start Docker containers';
     startCommand.handler = (argv)=> {
-      this.startOrStopContainers(argv._.slice(2), true, ()=>this.processExit());
+      this.firmamentDocker.startOrStopContainers(argv._.slice(2), true, ()=>this.processExit());
     };
     this.subCommands.push(startCommand);
   }
@@ -77,7 +77,7 @@ export class DockerCommand extends CommandImpl {
     stopCommand.aliases = ['stop'];
     stopCommand.commandDesc = 'Stop Docker containers';
     stopCommand.handler = argv=> {
-      this.startOrStopContainers(argv._.slice(2), false, ()=>this.processExit());
+      this.firmamentDocker.startOrStopContainers(argv._.slice(2), false, ()=>this.processExit());
     };
     this.subCommands.push(stopCommand);
   }
@@ -121,7 +121,7 @@ export class DockerCommand extends CommandImpl {
   }
 
   private printContainerList(argv:any, cb:()=>void) {
-    this.listContainers(argv.a, (err, containers)=> {
+    this.firmamentDocker.listContainers(argv.a, (err, containers)=> {
       this.prettyPrintDockerContainerList(err, containers, argv.a, cb);
     });
   }
@@ -228,7 +228,7 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  public removeContainers(containerIds:string[],
+/*  public removeContainers(containerIds:string[],
                           cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void) {
     let self = this;
     if (!containerIds.length) {
@@ -243,7 +243,7 @@ export class DockerCommand extends CommandImpl {
       }
       containerIds = null;
     }
-    this.getContainers(containerIds, (err:Error, containers:any[])=> {
+    this.firmamentDocker.getContainers(containerIds, (err:Error, containers:any[])=> {
       this.logError(err);
       async.map(containers,
         (containerOrErrorMsg, cb)=> {
@@ -257,28 +257,7 @@ export class DockerCommand extends CommandImpl {
           }
         }, cb);
     });
-  }
-
-  public startOrStopContainers(containerIds:any[], start:boolean, cb:()=>void) {
-    this.getContainers(containerIds, (err:Error, containers:any[])=> {
-      this.logError(err);
-      async.mapSeries(containers,
-        (containerOrErrorMsg, cb)=> {
-          if (typeof containerOrErrorMsg === 'string') {
-            this.logAndCallback(containerOrErrorMsg, cb);
-          } else {
-            let resultMessage = 'Container "' + containerOrErrorMsg.name + '" ';
-            resultMessage += start ? 'started.' : 'stopped.';
-            let fnStartStop = start
-              ? containerOrErrorMsg.start.bind(containerOrErrorMsg)
-              : containerOrErrorMsg.stop.bind(containerOrErrorMsg);
-            fnStartStop((err:Error)=> {
-              this.logAndCallback(this.returnErrorStringOrMessage(err, resultMessage), cb);
-            });
-          }
-        }, cb);
-    });
-  }
+  }*/
 
   private bashInToContainer(ids:string[], cb:(err:Error, exitCode?:number)=>void) {
     if (ids.length !== 1) {
@@ -287,7 +266,7 @@ export class DockerCommand extends CommandImpl {
       cb(new Error(msg));
       return;
     }
-    this.getContainer(ids[0].toString(), (err:Error, container:Container)=> {
+    this.firmamentDocker.getContainer(ids[0].toString(), (err:Error, container:Container)=> {
       if (this.callbackIfError(cb, err)) {
         return;
       }
@@ -295,91 +274,6 @@ export class DockerCommand extends CommandImpl {
         stdio: 'inherit'
       });
       cb(null, 0);
-    });
-  }
-
-  private getContainers(ids:string[], cb:(err:Error, containers:any[])=>void) {
-    if (!ids) {
-      this.listContainers(true, (err:Error, containers:any[])=> {
-        if (this.callbackIfError(cb, err)) {
-          return;
-        }
-        ids = [];
-        containers.forEach(container=> {
-          ids.push(container.firmamentId);
-        });
-        this.getContainers(ids, cb);
-      });
-      return;
-    }
-    let fnArray = ids.map(id=> {
-      return async.apply(this.getContainer.bind(this), id.toString());
-    });
-    async.series(fnArray, (err:Error, results:any[])=> {
-      if (!this.callbackIfError(cb, err)) {
-        cb(err, results.filter(result=>result));
-      }
-    });
-  }
-
-  private getContainer(id:string, cb:(err:Error, container:any)=>void) {
-    let self = this;
-    async.waterfall([
-        (cb:(err:Error)=>void)=> {
-          self.listContainers(true, cb);
-        },
-        (containers:any[], cb:(err:Error, container:any)=>void)=> {
-          let foundContainers = containers.filter(container=> {
-            if (container.firmamentId === id) {
-              return true;
-            } else {
-              for (let i = 0; i < container.Names.length; ++i) {
-                if (container.Names[i] === (id[0] === '/' ? id : '/' + id)) {
-                  return true;
-                }
-              }
-              let lowerCaseId = id.toLowerCase();
-              let charCount = lowerCaseId.length;
-              if (charCount < 3) {
-                return false;
-              }
-              return container.Id.toLowerCase().substring(0, charCount) ===
-                lowerCaseId.substring(0, charCount);
-            }
-          });
-          if (foundContainers.length > 0) {
-            let containerObject = DockerCommand.docker.getContainer(foundContainers[0].Id);
-            containerObject.name = foundContainers[0].Names[0];
-            cb(null, containerObject);
-          } else {
-            cb(null, 'Unable to find container: "' + id + '"');
-          }
-        }
-      ],
-      cb);
-  }
-
-/*  public listImages(listAllImages:boolean = false, cb:(err:Error, images:DockerImage[])=>void) {
-    this.firmamentDocker.listImages(listAllImages,cb);
-  }*/
-
-  private listContainers(listAllContainers:boolean, cb:(err:Error, containers?:any[])=>void) {
-    DockerCommand.docker.listContainers({all: true}, (err:Error, allContainers:any[])=> {
-      if (this.callbackIfError(cb, err)) {
-        return;
-      }
-      //Sort by name so firmament id is consistent
-      allContainers.sort(function (a, b) {
-        return a.Names[0].localeCompare(b.Names[0]);
-      });
-      let firmamentId = 0;
-      let containers = allContainers.map(container=> {
-        container.firmamentId = (++firmamentId).toString();
-        return (listAllContainers || (container.Status.substring(0, 2) === 'Up')) ? container : null;
-      }).filter(container=> {
-        return container;
-      });
-      cb(null, containers);
     });
   }
 

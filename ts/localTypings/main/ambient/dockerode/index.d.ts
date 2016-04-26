@@ -8,7 +8,11 @@ declare module dockerode {
   }
   export interface Container {
     id:string,
-    name:string
+    Id:string,
+    name:string,
+    Status:string,
+    firmamentId:string,
+    Names:string[]
   }
   export interface SpawnOptions {
     cwd:string,
@@ -30,6 +34,8 @@ declare module dockerode {
   }
   export interface DockerOde {
     listImages(options:any, cb:(err:Error, images:DockerImage[])=>void):void;
+    listContainers(options:any, cb:(err:Error, images:Container[])=>void):void;
+    getContainer(id:string):Container;
   }
   export interface ContainerConfig {
     name:string,
