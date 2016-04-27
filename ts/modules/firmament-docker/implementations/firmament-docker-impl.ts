@@ -5,12 +5,20 @@ import DockerImage = dockerode.DockerImage;
 import DockerOde = dockerode.DockerOde;
 import Container = dockerode.Container;
 const async = require('async');
+const deepExtend = require('deep-extend');
 const positive = require('positive');
 export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
   private dockerode:DockerOde;
   constructor(){
     super();
     this.dockerode = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
+  }
+  createContainer(containerConfig:any, cb:(err:Error, container:dockerode.Container)=>void) {
+    var fullContainerConfigCopy = {ExpressApps: []};
+    deepExtend(fullContainerConfigCopy, containerConfig);
+    this.dockerode.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
+      cb(err, container);
+    });
   }
   removeContainers(ids:string[], cb:(err:Error, containerRemoveResults:dockerode.ContainerRemoveResults[])=>void):void {
     let self = this;

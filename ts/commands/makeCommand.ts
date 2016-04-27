@@ -189,7 +189,7 @@ export class MakeCommand extends CommandImpl {
           //Create containers in parallel
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
-              docker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
+              this.firmamentDocker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
                 self.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
               });
             },

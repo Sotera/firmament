@@ -1,12 +1,10 @@
 import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
-import * as _ from 'lodash';
 import ContainerRemoveResults = dockerode.ContainerRemoveResults;
 import DockerImage = dockerode.DockerImage;
 import Container = dockerode.Container;
 import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
 import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
 const async = require('async');
-const deepExtend = require('deep-extend');
 const positive = require('positive');
 const childProcess = require('child_process');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
@@ -219,43 +217,11 @@ export class DockerCommand extends CommandImpl {
       });
   }
 
-  public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
+/*  public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
     var fullContainerConfigCopy = {ExpressApps: []};
-    //deepExtend(fullContainerConfigCopy, DockerDescriptors.dockerContainerDefaultDescriptor);
     deepExtend(fullContainerConfigCopy, containerConfig);
     DockerCommand.docker.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
       cb(err, container);
-    });
-  }
-
-/*  public removeContainers(containerIds:string[],
-                          cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void) {
-    let self = this;
-    if (!containerIds.length) {
-      console.log('Specify containers to remove by FirmamentId, Docker ID or Name. Or "*" to remove all.')
-      return;
-    }
-    if (_.indexOf(containerIds, 'all') !== -1) {
-      if (!positive("You're sure you want to remove all containers? [y/N] ", false)) {
-        console.log('Operation canceled.')
-        cb(null, null);
-        return;
-      }
-      containerIds = null;
-    }
-    this.firmamentDocker.getContainers(containerIds, (err:Error, containers:any[])=> {
-      this.logError(err);
-      async.map(containers,
-        (containerOrErrorMsg, cb)=> {
-          if (typeof containerOrErrorMsg === 'string') {
-            this.logAndCallback(containerOrErrorMsg, cb, null, {msg: containerOrErrorMsg});
-          } else {
-            containerOrErrorMsg.remove({force: 1}, (err:Error)=> {
-              var msg = 'Removing container "' + containerOrErrorMsg.name + '"';
-              self.logAndCallback(msg, cb, err, {msg: containerOrErrorMsg.name});
-            });
-          }
-        }, cb);
     });
   }*/
 
