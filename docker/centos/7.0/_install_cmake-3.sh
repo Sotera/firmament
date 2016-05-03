@@ -6,3 +6,4 @@ cd "cmake-3.5.2-Linux-x86_64/bin"
 DIR=$(pwd)
 cd -
 sudo ln -s "$DIR"/* /usr/local/bin/
+which cmake
