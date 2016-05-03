@@ -1,8 +1,7 @@
 #!/bin/bash
-curl --silent --location https://rpm.nodesource.com/setup_4.x | bash -
-#curl --silent --location https://rpm.nodesource.com/setup_0.12 | bash -
-yum install -y nodejs
-yum install -y unzip
-yum install -y krb5-devel
+sudo curl --silent --location https://rpm.nodesource.com/setup_4.x | sudo bash -
+sudo yum install -y nodejs
+sudo yum install -y unzip
+sudo yum install -y krb5-devel
 node --version
 npm --version

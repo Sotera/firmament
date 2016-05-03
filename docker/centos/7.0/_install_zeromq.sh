@@ -2,12 +2,11 @@
 sudo yum install -y git
 git clone https://github.com/zeromq/libzmq
 cd libzmq
-yum install -y cmake
 mkdir cmake-build
 cd cmake-build
 cmake .. 
 make -j 4
-make install
-ldconfig
-echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf
-ldconfig -v
+sudo make install
+sudo ldconfig
+sudo sh -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf'
+sudo ldconfig -v|grep zmq
