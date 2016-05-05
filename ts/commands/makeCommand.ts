@@ -1,4 +1,4 @@
-import {CommandImpl} from 'firmament-yargs';
+import {CommandImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const positive = require('positive');
@@ -21,6 +21,7 @@ interface ErrorEx extends Error {
 export class MakeCommand extends CommandImpl {
   static defaultConfigFilename = 'firmament.json';
   static jsonFileExtension = '.json';
+  static progressBar:ProgressBar = new ProgressBarImpl();
   private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
 
   constructor() {
@@ -169,11 +170,15 @@ export class MakeCommand extends CommandImpl {
             let cwd = process.cwd();
             let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
             let dockerImageName = containerConfig.Image;
-            docker.buildDockerFile(dockerFilePath, dockerImageName, (err:Error)=> {
-              cb(null, err
-                ? new Error('Unable to build Dockerfile at "' + dockerFilePath + '" because: ' + err.message)
-                : null);
-            });
+            this.firmamentDocker.buildDockerFile(dockerFilePath, dockerImageName,
+              function(taskId, status, current, total){
+                MakeCommand.progressBar.showProgressForTask(taskId, status, current, total);
+              },
+              (err:Error)=> {
+                cb(null, err
+                  ? new Error('Unable to build Dockerfile at "' + dockerFilePath + '" because: ' + err.message)
+                  : null);
+              });
           },
           (err:Error, errors:Error[])=> {
             if (self.callbackIfError(cb, err)) {

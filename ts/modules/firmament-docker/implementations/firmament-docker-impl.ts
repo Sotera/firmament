@@ -7,12 +7,15 @@ import Container = dockerode.Container;
 const async = require('async');
 const deepExtend = require('deep-extend');
 const positive = require('positive');
-export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
+const childProcess = require('child_process');
+export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker {
   private dockerode:DockerOde;
-  constructor(){
+
+  constructor() {
     super();
     this.dockerode = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
   }
+
   createContainer(containerConfig:any, cb:(err:Error, container:dockerode.Container)=>void) {
     var fullContainerConfigCopy = {ExpressApps: []};
     deepExtend(fullContainerConfigCopy, containerConfig);
@@ -20,6 +23,7 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
       cb(err, container);
     });
   }
+
   removeContainers(ids:string[], cb:(err:Error, containerRemoveResults:dockerode.ContainerRemoveResults[])=>void):void {
     let self = this;
     if (!ids.length) {
@@ -49,6 +53,7 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
         }, cb);
     });
   }
+
   startOrStopContainers(ids:string[], start:boolean, cb:()=>void):void {
     this.getContainers(ids, (err:Error, containers:Container[])=> {
       this.logError(err);
@@ -69,6 +74,7 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
         }, cb);
     });
   }
+
   getContainers(ids:string[], cb:(err:Error, containers:Container[])=>void):void {
     if (!ids) {
       this.listContainers(true, (err:Error, containers:Container[])=> {
@@ -92,6 +98,7 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
       }
     });
   }
+
   getContainer(id:string, cb:(err:Error, container:Container)=>void) {
     let self = this;
     async.waterfall([
@@ -128,6 +135,19 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
       ],
       cb);
   }
+
+  exec(id:string, command:string, cb:(err:Error, result:any)=>void):void {
+    this.getContainer(id, (err:Error, container:Container)=> {
+      if (this.callbackIfError(cb, err)) {
+        return;
+      }
+      childProcess.spawnSync('docker', ['exec', '-it', container.name.slice(1), command], {
+        stdio: 'inherit'
+      });
+      cb(null, 0);
+    });
+  }
+
   listContainers(listAllContainers:boolean, cb:(err:Error, containers?:Container[])=>void) {
     this.dockerode.listContainers({all: true}, (err:Error, allContainers:Container[])=> {
       if (this.callbackIfError(cb, err)) {
@@ -147,6 +167,7 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
       cb(null, containers);
     });
   }
+
   listImages(listAllImages:boolean, cb:(err:Error, images:dockerode.DockerImage[])=>void) {
     this.dockerode.listImages({all: listAllImages}, (err:Error, images:DockerImage[])=> {
       if (this.callbackIfError(cb, err)) {
@@ -165,5 +186,102 @@ export class FirmamentDockerImpl extends CommandImpl implements FirmamentDocker{
       });
       cb(null, images);
     });
+  }
+
+  buildDockerFile(dockerFilePath:string, dockerImageName:string,
+                  progressCb:(taskId:string, status:string, current:number, total:number)=>void,
+                  cb:(err:Error)=>void):void {
+    try {
+      //Check existence of dockerFilePath
+      require('fs').statSync(dockerFilePath);
+    } catch (err) {
+      if (this.callbackIfError(cb, err)) {
+        return;
+      }
+    }
+    try {
+      let tar = require('tar-fs');
+      let tarStream = tar.pack(dockerFilePath);
+      tarStream.on('error', (err:Error)=> {
+        cb(err);
+      });
+      this.dockerode.buildImage(tarStream, {
+        t: dockerImageName
+      }, function (err, outputStream) {
+        if (err) {
+          cb(err);
+          return;
+        }
+        let error:Error = null;
+        outputStream.on('data', function (chunk) {
+          try {
+            let data = JSON.parse(chunk);
+            if (data.error) {
+              error = data.error;
+              return;
+            }
+            if (data.status == 'Downloading' || data.status == 'Extracting') {
+              progressCb(data.id,
+                data.status,
+                data.progressDetail.current,
+                data.progressDetail.total);
+            }
+          } catch (err) {
+            error = err;
+          }
+        });
+        outputStream.on('end', function () {
+          //A sad little hack to not stop processing on the 'tag not found error'. We'll do
+          //this better next time.
+          cb(error
+          && error.message
+          && error.message.indexOf('not found in repository') === -1
+            ? error
+            : null);
+        });
+        outputStream.on('error', function () {
+          this.callbackIfError(cb, new Error("Error creating image: '" + dockerImageName + "'"));
+        });
+      });
+    } catch (err) {
+      this.callbackIfError(cb, err);
+    }
+  }
+
+  pullImage(imageName:string,
+            progressCb:(taskId:string, status:string, current:number, total:number)=>void,
+            cb:(err:Error)=>void) {
+    this.dockerode.pull(imageName,
+      (err, outputStream)=> {
+        let error:Error = null;
+        if (err) {
+          cb(err);
+          return;
+        }
+        outputStream.on('data', (chunk) => {
+          try {
+            let data = JSON.parse(chunk);
+            if (data.error) {
+              error = new Error(data.error);
+              return;
+            }
+            if (data.status === 'Downloading' || data.status === 'Extracting') {
+              progressCb(data.id,
+                data.status,
+                data.progressDetail.current,
+                data.progressDetail.total);
+            }
+          } catch (err) {
+            error = err;
+          }
+        });
+        outputStream.on('end', () => {
+          cb(error);
+        });
+        outputStream.on('error', function () {
+          let msg = "Unable to pull image: '" + imageName + "'";
+          cb(new Error(msg));
+        });
+      });
   }
 }

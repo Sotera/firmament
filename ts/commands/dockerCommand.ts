@@ -6,7 +6,6 @@ import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-
 import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
 const async = require('async');
 const positive = require('positive');
-const childProcess = require('child_process');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 interface ConsoleEx extends Console {
   table:any
@@ -42,8 +41,8 @@ export class DockerCommand extends CommandImpl {
     removeCommand.handler = (argv)=> {
       this.firmamentDocker.removeContainers(argv._.slice(2),
         (err:Error, containerRemoveResults:ContainerRemoveResults[])=> {
-        this.processExit(0);
-      });
+          this.processExit(0);
+        });
     };
     this.subCommands.push(removeCommand);
   }
@@ -112,77 +111,7 @@ export class DockerCommand extends CommandImpl {
     this.subCommands.push(psCommand);
   }
 
-  private printImagesList(argv:any, cb:()=>void) {
-    this.firmamentDocker.listImages(argv.a, (err, images)=> {
-      this.prettyPrintDockerImagesList(err, images, cb);
-    });
-  }
-
-  private printContainerList(argv:any, cb:()=>void) {
-    this.firmamentDocker.listContainers(argv.a, (err, containers)=> {
-      this.prettyPrintDockerContainerList(err, containers, argv.a, cb);
-    });
-  }
-
-  public buildDockerFile(dockerFilePath:string, dockerImageName:string, cb:(err:Error)=>void) {
-    try {
-      //Check existence of dockerFilePath
-      require('fs').statSync(dockerFilePath);
-    } catch (err) {
-      if (this.callbackIfError(cb, err)) {
-        return;
-      }
-    }
-    try {
-      let tar = require('tar-fs');
-      let tarStream = tar.pack(dockerFilePath);
-      tarStream.on('error', (err:Error)=> {
-        cb(err);
-      });
-      DockerCommand.docker.buildImage(tarStream, {
-        t: dockerImageName
-      }, function (err, outputStream) {
-        if (err) {
-          cb(err);
-          return;
-        }
-        let error:Error = null;
-        outputStream.on('data', function (chunk) {
-          try {
-            let data = JSON.parse(chunk);
-            if (data.error) {
-              error = data.error;
-              return;
-            }
-            if (data.status == 'Downloading' || data.status == 'Extracting') {
-              DockerCommand.progressBar.showProgressForTask(data.id,
-                data.status,
-                data.progressDetail.current,
-                data.progressDetail.total);
-            }
-          } catch (err) {
-            error = err;
-          }
-        });
-        outputStream.on('end', function () {
-          //A sad little hack to not stop processing on the 'tag not found error'. We'll do
-          //this better next time.
-          cb(error
-          && error.message
-          && error.message.indexOf('not found in repository') === -1
-            ? error
-            : null);
-        });
-        outputStream.on('error', function () {
-          this.callbackIfError(cb, new Error("Error creating image: '" + dockerImageName + "'"));
-        });
-      });
-    } catch (err) {
-      this.callbackIfError(cb, err);
-    }
-  }
-
-  public pullImage(imageName:string, cb:(err:Error)=>void) {
+/*  public pullImage(imageName:string, cb:(err:Error)=>void) {
     DockerCommand.docker.pull(imageName,
       (err, outputStream)=> {
         let error:Error = null;
@@ -215,15 +144,19 @@ export class DockerCommand extends CommandImpl {
           cb(new Error(msg));
         });
       });
+  }*/
+
+  private printImagesList(argv:any, cb:()=>void) {
+    this.firmamentDocker.listImages(argv.a, (err, images)=> {
+      this.prettyPrintDockerImagesList(err, images, cb);
+    });
   }
 
-/*  public createContainer(containerConfig:any, cb:(err:Error, container:any)=>void) {
-    var fullContainerConfigCopy = {ExpressApps: []};
-    deepExtend(fullContainerConfigCopy, containerConfig);
-    DockerCommand.docker.createContainer(fullContainerConfigCopy, (err:Error, container:any)=> {
-      cb(err, container);
+  private printContainerList(argv:any, cb:()=>void) {
+    this.firmamentDocker.listContainers(argv.a, (err, containers)=> {
+      this.prettyPrintDockerContainerList(err, containers, argv.a, cb);
     });
-  }*/
+  }
 
   private bashInToContainer(ids:string[], cb:(err:Error, exitCode?:number)=>void) {
     if (ids.length !== 1) {
@@ -232,15 +165,7 @@ export class DockerCommand extends CommandImpl {
       cb(new Error(msg));
       return;
     }
-    this.firmamentDocker.getContainer(ids[0].toString(), (err:Error, container:Container)=> {
-      if (this.callbackIfError(cb, err)) {
-        return;
-      }
-      childProcess.spawnSync('docker', ['exec', '-it', container.name.slice(1), '/bin/bash'], {
-        stdio: 'inherit'
-      });
-      cb(null, 0);
-    });
+    this.firmamentDocker.exec(ids[0].toString(), '/bin/bash', cb);
   }
 
   private prettyPrintDockerImagesList(err:Error, images:any[], cb:()=>void) {

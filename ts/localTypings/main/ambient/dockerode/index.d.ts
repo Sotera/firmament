@@ -36,7 +36,9 @@ declare module dockerode {
     listImages(options:any, cb:(err:Error, images:DockerImage[])=>void):void;
     listContainers(options:any, cb:(err:Error, images:Container[])=>void):void;
     getContainer(id:string):Container;
+    buildImage(tarStream:any, options:any, cb:(err:Error, outputStream:any)=>void);
     createContainer(containerConfig:any, cb:(err:Error, container:Container)=>void):void;
+    pull(imageName:string, cb:(err:Error, outputStream:any)=>void);
   }
   export interface ContainerConfig {
     name:string,
