@@ -150,7 +150,11 @@ export class MakeCommand extends CommandImpl {
         async.mapSeries(missingImageNames,
           (missingImageName, cb:(err:Error, missingImageName:string)=>void)=> {
             //Try to pull image
-            docker.pullImage(missingImageName, (err:Error)=> {
+            this.firmamentDocker.pullImage(missingImageName,
+              function(taskId, status, current, total){
+                MakeCommand.progressBar.showProgressForTask(taskId, status, current, total);
+              },
+              (err:Error)=> {
               cb(null, err ? missingImageName : null);
             });
           },

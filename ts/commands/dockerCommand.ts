@@ -7,10 +7,6 @@ import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/f
 const async = require('async');
 const positive = require('positive');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
-interface ConsoleEx extends Console {
-  table:any
-}
-declare let console:ConsoleEx;
 export class DockerCommand extends CommandImpl {
   private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
   static docker = new (require('dockerode'))({socketPath: '/var/run/docker.sock'});
@@ -110,41 +106,6 @@ export class DockerCommand extends CommandImpl {
     psCommand.handler = argv=> this.printContainerList(argv, ()=>this.processExit());
     this.subCommands.push(psCommand);
   }
-
-/*  public pullImage(imageName:string, cb:(err:Error)=>void) {
-    DockerCommand.docker.pull(imageName,
-      (err, outputStream)=> {
-        let error:Error = null;
-        if (err) {
-          cb(err);
-          return;
-        }
-        outputStream.on('data', (chunk) => {
-          try {
-            let data = JSON.parse(chunk);
-            if (data.error) {
-              error = new Error(data.error);
-              return;
-            }
-            if (data.status === 'Downloading' || data.status === 'Extracting') {
-              DockerCommand.progressBar.showProgressForTask(data.id,
-                data.status,
-                data.progressDetail.current,
-                data.progressDetail.total);
-            }
-          } catch (err) {
-            error = err;
-          }
-        });
-        outputStream.on('end', () => {
-          cb(error);
-        });
-        outputStream.on('error', function () {
-          let msg = "Unable to pull image: '" + imageName + "'";
-          cb(new Error(msg));
-        });
-      });
-  }*/
 
   private printImagesList(argv:any, cb:()=>void) {
     this.firmamentDocker.listImages(argv.a, (err, images)=> {
