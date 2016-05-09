@@ -1,19 +1,13 @@
 import {CommandImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
+import {
+  FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults, Container, ExpressApp,
+  SpawnOptions, DockerDescriptors, ContainerConfig
+} from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const positive = require('positive');
 const childProcess = require('child_process');
 import * as _ from 'lodash';
-import {DockerDescriptors} from "../util/docker-descriptors";
-import {DockerCommand} from "./dockerCommand";
-import DockerImage = dockerode.DockerImage;
-import ContainerRemoveResults = dockerode.ContainerRemoveResults;
-import ContainerConfig = dockerode.ContainerConfig;
-import Container = dockerode.Container;
-import ExpressApp = dockerode.ExpressApp;
-import SpawnOptions = dockerode.SpawnOptions;
-import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
-import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
 interface ErrorEx extends Error {
   statusCode:number,
   json:string
@@ -122,7 +116,6 @@ export class MakeCommand extends CommandImpl {
     containerConfigs.forEach(containerConfig=> {
       containerConfigsByImageName[containerConfig.Image] = containerConfig;
     });
-    var docker = new DockerCommand();
     async.waterfall([
       //Remove all containers mentioned in config file
       (cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void)=> {
@@ -151,12 +144,12 @@ export class MakeCommand extends CommandImpl {
           (missingImageName, cb:(err:Error, missingImageName:string)=>void)=> {
             //Try to pull image
             this.firmamentDocker.pullImage(missingImageName,
-              function(taskId, status, current, total){
+              function (taskId, status, current, total) {
                 MakeCommand.progressBar.showProgressForTask(taskId, status, current, total);
               },
               (err:Error)=> {
-              cb(null, err ? missingImageName : null);
-            });
+                cb(null, err ? missingImageName : null);
+              });
           },
           (err:Error, missingImageNames:string[])=> {
             if (self.callbackIfError(cb, err)) {
@@ -175,7 +168,7 @@ export class MakeCommand extends CommandImpl {
             let dockerFilePath = path.join(cwd, containerConfig.DockerFilePath);
             let dockerImageName = containerConfig.Image;
             this.firmamentDocker.buildDockerFile(dockerFilePath, dockerImageName,
-              function(taskId, status, current, total){
+              function (taskId, status, current, total) {
                 MakeCommand.progressBar.showProgressForTask(taskId, status, current, total);
               },
               (err:Error)=> {

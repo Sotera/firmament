@@ -1,6 +1,5 @@
 import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
-import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
-import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
+import {FirmamentDocker, FirmamentDockerImpl} from "firmament-docker";
 const positive = require('positive');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 export class DockerCommand extends CommandImpl {
