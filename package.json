@@ -25,7 +25,7 @@
     "async": "^2.0.0-rc.2",
     "filesize": "^3.2.1",
     "firmament-yargs": "^0.1.5",
-    "firmament-docker": "^0.1.8",
+    "firmament-docker": "^0.1.9",
     "jsnlog": "^2.17.0",
     "jsonfile": "^2.2.3",
     "lodash": "^4.8.2",
