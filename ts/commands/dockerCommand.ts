@@ -1,10 +1,6 @@
 import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
-import ContainerRemoveResults = dockerode.ContainerRemoveResults;
-import DockerImage = dockerode.DockerImage;
-import Container = dockerode.Container;
 import {FirmamentDocker} from "../modules/firmament-docker/interfaces/firmament-docker";
 import {FirmamentDockerImpl} from "../modules/firmament-docker/implementations/firmament-docker-impl";
-const async = require('async');
 const positive = require('positive');
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 export class DockerCommand extends CommandImpl {
@@ -36,7 +32,7 @@ export class DockerCommand extends CommandImpl {
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
       this.firmamentDocker.removeContainers(argv._.slice(2),
-        (err:Error, containerRemoveResults:ContainerRemoveResults[])=> {
+        (err:Error, containerRemoveResults:any[])=> {
           this.processExit(0);
         });
     };
@@ -139,9 +135,9 @@ export class DockerCommand extends CommandImpl {
       CommandLineImpl.printTable(images.map(container=> {
         try {
           var ID = container.firmamentId;
-          var xxx = container.RepoTags[0].split(':');
-          var Repository = xxx[0];
-          var Tag = xxx[1];
+          var repoTags = container.RepoTags[0].split(':');
+          var Repository = repoTags[0];
+          var Tag = repoTags[1];
           var ImageId = container.Id.substring(7, 19);
           var nowTicks = +new Date();
           var tickDiff = nowTicks - (1000 * container.Created);
