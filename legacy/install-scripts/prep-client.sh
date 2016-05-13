@@ -2,9 +2,7 @@
 update-alternatives --config editor
 echo 'set -o vi' >> ~/.bashrc
 echo "alias d='/usr/bin/docker'" >> ~/.bashrc
-echo "alias f='~/firmament/firmament.js'" >> ~/.bashrc
+echo "alias f='~/firmament/js/firmament.js'" >> ~/.bashrc
 echo 'set nu' >> ~/.vimrc
-git config --global user.email "user@nowhere.com"
-git config --global user.name "user nowhere"
-#Continuous integration so bower won't ask for statistics
-export CI=true
+git config --global user.email "john.reeme@soteradefense.com"
+git config --global user.name "John Reeme"
