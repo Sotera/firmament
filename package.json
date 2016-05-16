@@ -2,7 +2,7 @@
   "name": "firmament",
   "version": "0.0.1",
   "description": "Docker management script",
-  "main": "firmament.js",
+  "main": "js/firmament.js",
   "scripts": {
     "test": "./node_modules/.bin/jasmine-node spec/"
   },

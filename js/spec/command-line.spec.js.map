@@ -1,0 +1,1 @@
+{"version":3,"file":"command-line.spec.js","sourceRoot":"","sources":["../../ts/spec/command-line.spec.ts"],"names":[],"mappings":"AAAA,QAAQ,CAAC,UAAU,EAAC;IAClB,QAAQ,CAAC,uBAAuB,EAAE;QAChC,EAAE,CAAC,oBAAoB,EAAE;YACvB,IAAI,EAAE,GAAW,CAAC,CAAC;YACnB,MAAM,CAAC,EAAE,CAAC,CAAC,IAAI,CAAC,CAAC,CAAC,CAAC;QACrB,CAAC,CAAC,CAAC;IACL,CAAC,CAAC,CAAC;AACL,CAAC,CAAC,CAAC"}
