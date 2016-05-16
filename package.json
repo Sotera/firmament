@@ -1,8 +1,10 @@
 {
   "name": "firmament",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Docker management script",
   "main": "js/firmament.js",
+  "preferGlobal": true,
+  "bin": "./js/firmament.js",
   "scripts": {
     "test": "./node_modules/.bin/jasmine-node spec/"
   },
