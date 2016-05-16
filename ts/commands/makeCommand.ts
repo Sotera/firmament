@@ -6,7 +6,6 @@ import {
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const positive = require('positive');
-const childProcess = require('child_process');
 import * as _ from 'lodash';
 interface ErrorEx extends Error {
   statusCode:number,
@@ -331,15 +330,6 @@ export class MakeCommand extends CommandImpl {
 
   private gitClone(gitUrl:string, gitBranch:string, localFolder:string, cb:(err:Error, child:any)=>void) {
     this.spawnShellCommand('git', ['clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
-  }
-
-  private spawnShellCommand(command:string, args:string[], options:SpawnOptions, cb:(err:Error, result:any)=>void) {
-    options = options || {stdio: 'inherit', cwd: null};
-    options.stdio = options.stdio || 'inherit';
-    let child = childProcess.spawnSync(command, args, options);
-    process.nextTick(()=> {
-      cb(child.error, child);
-    });
   }
 }
 
