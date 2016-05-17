@@ -3,7 +3,7 @@ import {PrepLinux} from '../modules/interfaces/prep-linux';
 import {PrepLinuxImpl} from '../modules/implementations/prep-linux-impl';
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 export class PrepLinuxCommand extends CommandImpl {
-  static prepLinux:PrepLinux = new PrepLinuxImpl();
+  private prepLinux:PrepLinux = new PrepLinuxImpl();
 
   constructor() {
     super();
@@ -21,10 +21,13 @@ export class PrepLinuxCommand extends CommandImpl {
   private pushShellCommand() {
     let shellCommand = new CommandImpl();
     shellCommand.aliases = ['ubuntu-14.04'];
-    shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament',
-      shellCommand.handler = (argv)=> {
-        this.processExit(0);
-      };
+    shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament';
+    shellCommand.handler = (argv)=> {
+      //noinspection JSUnusedLocalSymbols
+      this.prepLinux.ubuntu_14_04(argv, (err:Error, result:string[])=>{
+        this.processExitWithError(err);
+      });
+    };
     this.subCommands.push(shellCommand);
   }
 }

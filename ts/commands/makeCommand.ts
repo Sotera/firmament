@@ -1,7 +1,7 @@
 import {CommandImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
 import {
   FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults, Container, ExpressApp,
-  SpawnOptions, DockerDescriptors, ContainerConfig
+  DockerDescriptors, ContainerConfig
 } from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
@@ -34,6 +34,7 @@ export class MakeCommand extends CommandImpl {
     let templateCommand = new CommandImpl();
     templateCommand.aliases = ['template', 't'];
     templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
+    //noinspection ReservedWordAsName
     templateCommand.options = {
       output: {
         alias: 'o',
@@ -56,6 +57,7 @@ export class MakeCommand extends CommandImpl {
     let buildCommand = new CommandImpl();
     buildCommand.aliases = ['build', 'b'];
     buildCommand.commandDesc = 'Build Docker containers based on JSON spec';
+    //noinspection ReservedWordAsName
     buildCommand.options = {
       verbose: {
         alias: 'v',
@@ -115,6 +117,7 @@ export class MakeCommand extends CommandImpl {
     containerConfigs.forEach(containerConfig=> {
       containerConfigsByImageName[containerConfig.Image] = containerConfig;
     });
+    //noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
     async.waterfall([
       //Remove all containers mentioned in config file
       (cb:(err:Error, containerRemoveResults:ContainerRemoveResults[])=>void)=> {
@@ -188,6 +191,7 @@ export class MakeCommand extends CommandImpl {
         try {
           let sortedContainerConfigs = self.containerDependencySort(containerConfigs);
           //Create containers in parallel
+          //noinspection JSUnusedLocalSymbols
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
               this.firmamentDocker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
@@ -209,10 +213,13 @@ export class MakeCommand extends CommandImpl {
         }
       },
       function deployExpressApps(errs:Error[], cb:(err:Error, results:any)=>void) {
+        //noinspection JSUnusedLocalSymbols
         async.mapSeries(containerConfigs,
           (containerConfig:ContainerConfig, cb:(err:Error, result:any)=>void)=> {
+            //noinspection JSUnusedLocalSymbols
             async.mapSeries(containerConfig.ExpressApps || [],
               (expressApp:ExpressApp, cb:(err:Error, result:any)=>void)=> {
+                //noinspection JSUnusedLocalSymbols
                 async.series([
                     (cb:(err:Error, result:any)=>void)=> {
                       let cwd = process.cwd();
@@ -225,6 +232,7 @@ export class MakeCommand extends CommandImpl {
                         });
                     },
                     (cb:(err:Error, result:any)=>void)=> {
+                      //noinspection JSUnusedLocalSymbols
                       async.mapSeries(expressApp.Scripts || [],
                         (script, cb:(err:Error, result:any)=>void)=> {
                           let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;

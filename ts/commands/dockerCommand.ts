@@ -1,6 +1,5 @@
 import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
-import {FirmamentDocker, FirmamentDockerImpl} from "firmament-docker";
-const positive = require('positive');
+import {FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults} from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 export class DockerCommand extends CommandImpl {
   private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
@@ -31,8 +30,8 @@ export class DockerCommand extends CommandImpl {
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
       this.firmamentDocker.removeContainers(argv._.slice(2),
-        (err:Error, containerRemoveResults:any[])=> {
-          this.processExit(0);
+        (err:Error, crr:ContainerRemoveResults[])=> {
+          this.processExitWithError(err, crr && crr.length && crr[0] ? crr[0].msg : '');
         });
     };
     this.subCommands.push(removeCommand);
@@ -41,12 +40,12 @@ export class DockerCommand extends CommandImpl {
   private pushShellCommand() {
     let shellCommand = new CommandImpl();
     shellCommand.aliases = ['sh'];
-    shellCommand.commandDesc = 'Run bash shell in Docker container',
-      shellCommand.handler = (argv)=> {
-        this.bashInToContainer(argv._.slice(2), (err:Error, exitCode:number = 0)=> {
-          this.processExit(exitCode, err ? err.message : '');
-        });
-      };
+    shellCommand.commandDesc = 'Run bash shell in Docker container';
+    shellCommand.handler = (argv)=> {
+      this.bashInToContainer(argv._.slice(2), (err:Error)=> {
+        this.processExitWithError(err);
+      });
+    };
     this.subCommands.push(shellCommand);
   }
 
@@ -74,6 +73,7 @@ export class DockerCommand extends CommandImpl {
     let imagesCommand = new CommandImpl();
     imagesCommand.aliases = ['images'];
     imagesCommand.commandDesc = 'List Docker images';
+    //noinspection ReservedWordAsName
     imagesCommand.options = {
       all: {
         alias: 'a',
@@ -90,6 +90,7 @@ export class DockerCommand extends CommandImpl {
     let psCommand = new CommandImpl();
     psCommand.aliases = ['ps'];
     psCommand.commandDesc = 'List Docker containers';
+    //noinspection ReservedWordAsName
     psCommand.options = {
       all: {
         alias: 'a',
@@ -114,7 +115,7 @@ export class DockerCommand extends CommandImpl {
     });
   }
 
-  private bashInToContainer(ids:string[], cb:(err:Error, exitCode?:number)=>void) {
+  private bashInToContainer(ids:string[], cb:(err:Error)=>void) {
     if (ids.length !== 1) {
       let msg = '\nSpecify container to shell into by FirmamentId, Docker ID or Name.\n';
       msg += '\nExample: $ ... d sh 2  <= Open bash shell in container with FirmamentId "2"\n';
