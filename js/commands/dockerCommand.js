@@ -6,7 +6,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var firmament_yargs_1 = require('firmament-yargs');
 var firmament_docker_1 = require("firmament-docker");
-var positive = require('positive');
 var log = require('jsnlog').JL();
 var DockerCommand = (function (_super) {
     __extends(DockerCommand, _super);
@@ -33,8 +32,8 @@ var DockerCommand = (function (_super) {
         removeCommand.aliases = ['rm'];
         removeCommand.commandDesc = 'Remove Docker containers';
         removeCommand.handler = function (argv) {
-            _this.firmamentDocker.removeContainers(argv._.slice(2), function (err, containerRemoveResults) {
-                _this.processExit(0);
+            _this.firmamentDocker.removeContainers(argv._.slice(2), function (err, crr) {
+                _this.processExitWithError(err, crr && crr.length && crr[0] ? crr[0].msg : '');
             });
         };
         this.subCommands.push(removeCommand);
@@ -43,13 +42,12 @@ var DockerCommand = (function (_super) {
         var _this = this;
         var shellCommand = new firmament_yargs_1.CommandImpl();
         shellCommand.aliases = ['sh'];
-        shellCommand.commandDesc = 'Run bash shell in Docker container',
-            shellCommand.handler = function (argv) {
-                _this.bashInToContainer(argv._.slice(2), function (err, exitCode) {
-                    if (exitCode === void 0) { exitCode = 0; }
-                    _this.processExit(exitCode, err ? err.message : '');
-                });
-            };
+        shellCommand.commandDesc = 'Run bash shell in Docker container';
+        shellCommand.handler = function (argv) {
+            _this.bashInToContainer(argv._.slice(2), function (err) {
+                _this.processExitWithError(err);
+            });
+        };
         this.subCommands.push(shellCommand);
     };
     DockerCommand.prototype.pushStartCommand = function () {

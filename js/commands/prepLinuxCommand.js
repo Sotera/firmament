@@ -11,6 +11,7 @@ var PrepLinuxCommand = (function (_super) {
     __extends(PrepLinuxCommand, _super);
     function PrepLinuxCommand() {
         _super.call(this);
+        this.prepLinux = new prep_linux_impl_1.PrepLinuxImpl();
         log.trace('Constructing PrepLinuxCommand instance');
         this.buildCommandTree();
     }
@@ -24,13 +25,14 @@ var PrepLinuxCommand = (function (_super) {
         var _this = this;
         var shellCommand = new firmament_yargs_1.CommandImpl();
         shellCommand.aliases = ['ubuntu-14.04'];
-        shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament',
-            shellCommand.handler = function (argv) {
-                _this.processExit(0);
-            };
+        shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament';
+        shellCommand.handler = function (argv) {
+            _this.prepLinux.ubuntu_14_04(argv, function (err, result) {
+                _this.processExitWithError(err);
+            });
+        };
         this.subCommands.push(shellCommand);
     };
-    PrepLinuxCommand.prepLinux = new prep_linux_impl_1.PrepLinuxImpl();
     return PrepLinuxCommand;
 }(firmament_yargs_1.CommandImpl));
 exports.PrepLinuxCommand = PrepLinuxCommand;

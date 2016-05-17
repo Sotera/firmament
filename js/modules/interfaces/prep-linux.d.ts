@@ -1,3 +1,3 @@
 export interface PrepLinux {
-    tmp(containerConfig: any, cb: (err: Error, container: any) => void): any;
+    ubuntu_14_04(argv: any, cb: (err: Error, result: any) => void): any;
 }
