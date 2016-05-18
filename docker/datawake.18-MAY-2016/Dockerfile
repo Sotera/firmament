@@ -94,26 +94,32 @@ RUN apt-get update -y; exit 0
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
 RUN apt-get install -y oracle-java8-installer
 
-RUN useradd -ms /bin/bash strong-pm && echo "strong-pm:strong-pm" | chpasswd && adduser strong-pm sudo
-RUN chown -R strong-pm:strong-pm /usr/local
-RUN su strong-pm -c "npm install -g strong-pm && npm cache clear"
+#RUN useradd -ms /bin/bash strong-pm && echo "strong-pm:strong-pm" | chpasswd && adduser strong-pm sudo
+#RUN chown -R strong-pm:strong-pm /usr/local
+#RUN su strong-pm -c "npm install -g strong-pm && npm cache clear"
+RUN npm install -g strong-pm && npm cache clear
 
 # Set up some semblance of an environment
-WORKDIR /home/strong-pm
-ENV HOME=/home/strong-pm
+#WORKDIR /home/strong-pm
+#ENV HOME=/home/strong-pm
 
 # Define commonly used JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
-# Run as non-privileged user inside container
-USER strong-pm
-
 # Expose strong-pm port
 EXPOSE 8701 3000 3001 3002 3003
 
-COPY docker-entrypoint.sh /entrypoint.sh
-#ENTRYPOINT ["/entrypoint.sh"]
+#
+# Supervisor (for running multiple services in Docker container
+#
+RUN apt-get install -y supervisor
+
+COPY datawake.conf /etc/supervisor/conf.d/datawake.conf
+COPY _etc_supervisor.conf /etc/supervisor.conf
+
+# Run as non-privileged user inside container
+#USER strong-pm
 
 #ENTRYPOINT ["/usr/local/bin/sl-pm", "--base", ".", "--listen", "8701"]
-#CMD ["mongod"]
-CMD [ "/bin/bash" ]
+#CMD ["/bin/bash"]
+CMD supervisord -c /etc/supervisor.conf
