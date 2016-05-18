@@ -98,6 +98,7 @@ RUN apt-get install -y oracle-java8-installer
 #RUN chown -R strong-pm:strong-pm /usr/local
 #RUN su strong-pm -c "npm install -g strong-pm && npm cache clear"
 RUN npm install -g strong-pm && npm cache clear
+RUN npm install -g strongloop && npm cache clear
 
 # Set up some semblance of an environment
 #WORKDIR /home/strong-pm
