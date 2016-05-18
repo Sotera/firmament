@@ -11,33 +11,33 @@ var PrepLinuxImpl = (function (_super) {
     __extends(PrepLinuxImpl, _super);
     function PrepLinuxImpl() {
         _super.call(this);
+        this.sudo = new sudo_impl_1.SudoImpl();
     }
     PrepLinuxImpl.prototype.ubuntu_14_04 = function (argv, cb) {
         var me = this;
         async.series([
             function (cb) {
-                me.spawnShellCommand('sh', ['-c', 'echo "set -o vi" >> ~/.bashrc'], null, cb);
+                me.spawn(['-c', 'echo "set -o vi" >> ~/.bashrc'], cb);
             },
             function (cb) {
-                me.spawnShellCommand('sh', ['-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], null, cb);
+                me.spawn(['-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], cb);
             },
             function (cb) {
-                me.spawnShellCommand('sh', ['-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], null, cb);
+                me.spawn(['-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], cb);
             },
             function (cb) {
-                me.spawnShellCommand('sh', ['-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
+                me.spawn(['-c', 'echo "set nu" >> ~/.vimrc'], cb);
             },
             function (cb) {
-                var sudo = new sudo_impl_1.SudoImpl();
-                var sudoOptions = {
-                    cachePassword: true
-                };
-                var child = sudo.spawnSync(['ls', '-Fal', '/tmp'], sudoOptions);
-                child.stdout.on('data', function (data) {
-                    console.log(data.toString());
-                });
+                me.sudoSpawn(['ps', '-Fel'], cb);
             }
         ], cb);
+    };
+    PrepLinuxImpl.prototype.spawn = function (cmd, cb) {
+        this.spawnShellCommand('sh', cmd, null, cb);
+    };
+    PrepLinuxImpl.prototype.sudoSpawn = function (cmd, cb) {
+        this.sudo.spawn(cmd, cb);
     };
     return PrepLinuxImpl;
 }(firmament_yargs_1.CommandImpl));

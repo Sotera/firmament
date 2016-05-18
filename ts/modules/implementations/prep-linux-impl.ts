@@ -4,49 +4,39 @@ import {Sudo} from '../interfaces/sudo';
 import {SudoImpl} from '../implementations/sudo-impl';
 const async = require('async');
 export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
+  private sudo:Sudo = new SudoImpl();
+
+  constructor() {
+    super();
+  }
+
   ubuntu_14_04(argv:any, cb:(err:Error, result:any)=>void) {
     //TODO: Just hack it in for now, later give user choices of what to do
     var me = this;
     async.series([
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand('sh', ['-c', 'echo "set -o vi" >> ~/.bashrc'], null, cb);
+        me.spawn(['-c', 'echo "set -o vi" >> ~/.bashrc'], cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand('sh', ['-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], null, cb);
+        me.spawn(['-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand('sh', ['-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], null, cb);
+        me.spawn(['-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand('sh', ['-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
+        me.spawn(['-c', 'echo "set nu" >> ~/.vimrc'], cb);
       },
-      function (cb:(err:Error)=>void) {
-        var sudo:Sudo = new SudoImpl();
-        var sudoOptions = {
-          cachePassword: true
-          //,prompt: '[sudo] password: '
-          //,spawnOptions: {stdio: 'inherit'}
-        };
-        var child = sudo.spawnSync(['ls', '-Fal', '/tmp'], sudoOptions);
-        child.stdout.on('data', (data)=> {
-          console.log(data.toString());
-        });
-        /*        console.log('Firing it up!');
-         var sudoOptions = {
-         cachePassword: true,
-         prompt: '[sudo] password: '
-         //,spawnOptions: {stdio: 'inherit'}
-         };
-         var child = sudo(['ls', '-F'], sudoOptions);
-         //var child = sudo(['apt-get', 'update'], sudoOptions);
-         child.stdout.on('data', (data)=>{
-         console.log(data.toString());
-         });*/
+      function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['ps', '-Fel'], cb);
       }
     ], cb);
   }
 
-  constructor() {
-    super();
+  spawn(cmd:string[], cb:(err?:Error)=>void) {
+    this.spawnShellCommand('sh', cmd, null, cb);
+  }
+
+  sudoSpawn(cmd:string[], cb:(err?:Error)=>void) {
+    this.sudo.spawn(cmd, cb);
   }
 }
