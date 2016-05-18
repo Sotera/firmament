@@ -1,5 +1,40 @@
 FROM ubuntu:15.04
 
+#
+# Node 5.9.1
+#
+# gpg keys listed at https://github.com/nodejs/node
+
+RUN apt-get install -y curl
+
+RUN set -ex \
+  && for key in \
+    9554F04D7259F04124DE6B476D5A82AC7E37093B \
+    94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
+    0034A06D9D9B0064CE8ADF6BF1747F4AD2306D93 \
+    FD3A5288F042B6850C66B31F09FE44734EB7990E \
+    71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
+    DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+    B9AE9905FFD7803F25714661B63B535A4C206CA9 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+  ; do \
+    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+  done
+
+ENV NPM_CONFIG_LOGLEVEL info
+ENV NODE_VERSION 5.9.1
+
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz"
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc"
+RUN gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc
+RUN grep " node-v$NODE_VERSION-linux-x64.tar.gz\$" SHASUMS256.txt | sha256sum -c -
+RUN tar xf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1
+RUN rm "node-v$NODE_VERSION-linux-x64.tar.gz" SHASUMS256.txt.asc SHASUMS256.txt
+
+#
+# Mongo 2.6
+#
+
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
 
@@ -33,12 +68,52 @@ RUN set -x \
 	&& tar -xvf mongo.tgz -C /usr/local --strip-components=1 \
 	&& rm mongo.tgz
 
+EXPOSE 27017
+
 RUN mkdir -p /data/db /data/configdb \
 	&& chown -R mongodb:mongodb /data/db /data/configdb
-VOLUME /data/db /data/configdb
+
+#VOLUME /data/db /data/configdb
+
+#
+# Utils & Java8
+#
+
+RUN apt-get update -y
+RUN apt-get install software-properties-common -y
+RUN apt-get install -y git
+RUN apt-get install -y vim
+RUN apt-get install -y procps
+RUN apt-get install -y python
+RUN apt-get install -y sudo
+RUN add-apt-repository -y ppa:webupd8team/java
+RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | tee /etc/apt/sources.list.d/webupd8team-java.list
+RUN echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
+RUN apt-get update -y; exit 0
+RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+RUN apt-get install -y oracle-java8-installer
+
+RUN useradd -ms /bin/bash strong-pm && echo "strong-pm:strong-pm" | chpasswd && adduser strong-pm sudo
+RUN chown -R strong-pm:strong-pm /usr/local
+RUN su strong-pm -c "npm install -g strong-pm && npm cache clear"
+
+# Set up some semblance of an environment
+WORKDIR /home/strong-pm
+ENV HOME=/home/strong-pm
+
+# Define commonly used JAVA_HOME variable
+ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+
+# Run as non-privileged user inside container
+USER strong-pm
+
+# Expose strong-pm port
+EXPOSE 8701 3000 3001 3002 3003
 
 COPY docker-entrypoint.sh /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
 
-EXPOSE 27017
-CMD ["mongod"]
+#ENTRYPOINT ["/usr/local/bin/sl-pm", "--base", ".", "--listen", "8701"]
+#CMD ["mongod"]
+CMD [ "/bin/bash" ]
