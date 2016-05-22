@@ -190,7 +190,6 @@ export class MakeCommand extends CommandImpl {
       (errs:Error[], cb:(err:Error, results:any)=>void)=> {
         try {
           let sortedContainerConfigs = self.containerDependencySort(containerConfigs);
-          //Create containers in parallel
           //noinspection JSUnusedLocalSymbols
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
