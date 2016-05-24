@@ -19,21 +19,48 @@ var DockerCommand = (function (_super) {
         this.aliases = ['docker', 'd'];
         this.command = '<subCommand>';
         this.commandDesc = 'Support for working with Docker containers';
+        this.pushCleanVolumesCommand();
         this.pushImagesCommand();
         this.pushPsCommand();
         this.pushStartCommand();
         this.pushStopCommand();
-        this.pushRemoveCommand();
+        this.pushRemoveContainersCommand();
+        this.pushRemoveImagesCommand();
         this.pushShellCommand();
     };
-    DockerCommand.prototype.pushRemoveCommand = function () {
+    DockerCommand.prototype.pushCleanVolumesCommand = function () {
+        var me = this;
+        var cleanVolumesCommand = new firmament_yargs_1.CommandImpl();
+        cleanVolumesCommand.aliases = ['clean-volumes', 'cv'];
+        cleanVolumesCommand.commandDesc = 'Clean orphaned Docker resources';
+        cleanVolumesCommand.handler = function (argv) {
+            var script = require('path').join(__dirname, '../../legacy/_docker-cleanup-volumes.sh');
+            me.sudoSpawn(['/bin/bash', '-c', script], function (err) {
+                me.processExitWithError(err);
+            });
+        };
+        this.subCommands.push(cleanVolumesCommand);
+    };
+    DockerCommand.prototype.pushRemoveImagesCommand = function () {
+        var _this = this;
+        var removeCommand = new firmament_yargs_1.CommandImpl();
+        removeCommand.aliases = ['rmi'];
+        removeCommand.commandDesc = 'Remove Docker images';
+        removeCommand.handler = function (argv) {
+            _this.firmamentDocker.removeImages(argv._.slice(2), function (err) {
+                _this.processExitWithError(err);
+            });
+        };
+        this.subCommands.push(removeCommand);
+    };
+    DockerCommand.prototype.pushRemoveContainersCommand = function () {
         var _this = this;
         var removeCommand = new firmament_yargs_1.CommandImpl();
         removeCommand.aliases = ['rm'];
         removeCommand.commandDesc = 'Remove Docker containers';
         removeCommand.handler = function (argv) {
-            _this.firmamentDocker.removeContainers(argv._.slice(2), function (err, crr) {
-                _this.processExitWithError(err, crr && crr.length && crr[0] ? crr[0].msg : '');
+            _this.firmamentDocker.removeContainers(argv._.slice(2), function (err) {
+                _this.processExitWithError(err);
             });
         };
         this.subCommands.push(removeCommand);
@@ -131,17 +158,17 @@ var DockerCommand = (function (_super) {
         else {
             var timeAgo = require('time-ago')();
             var fileSize = require('filesize');
-            firmament_yargs_1.CommandLineImpl.printTable(images.map(function (container) {
+            firmament_yargs_1.CommandLineImpl.printTable(images.map(function (image) {
                 try {
-                    var ID = container.firmamentId;
-                    var repoTags = container.RepoTags[0].split(':');
+                    var ID = image.firmamentId;
+                    var repoTags = image.RepoTags[0].split(':');
                     var Repository = repoTags[0];
                     var Tag = repoTags[1];
-                    var ImageId = container.Id.substring(7, 19);
+                    var ImageId = image.Id.substring(7, 19);
                     var nowTicks = +new Date();
-                    var tickDiff = nowTicks - (1000 * container.Created);
+                    var tickDiff = nowTicks - (1000 * image.Created);
                     var Created = timeAgo.ago(nowTicks - tickDiff);
-                    var Size = fileSize(container.Size);
+                    var Size = fileSize(image.Size);
                 }
                 catch (err) {
                     console.log(err.message);

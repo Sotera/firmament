@@ -1,5 +1,5 @@
 import {CommandImpl, CommandLineImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
-import {FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults} from "firmament-docker";
+import {FirmamentDocker, FirmamentDockerImpl, DockerImage} from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 export class DockerCommand extends CommandImpl {
   private firmamentDocker:FirmamentDocker = new FirmamentDockerImpl();
@@ -16,22 +16,50 @@ export class DockerCommand extends CommandImpl {
     this.aliases = ['docker', 'd'];
     this.command = '<subCommand>';
     this.commandDesc = 'Support for working with Docker containers';
+    this.pushCleanVolumesCommand();
     this.pushImagesCommand();
     this.pushPsCommand();
     this.pushStartCommand();
     this.pushStopCommand();
-    this.pushRemoveCommand();
+    this.pushRemoveContainersCommand();
+    this.pushRemoveImagesCommand();
     this.pushShellCommand();
   }
 
-  private pushRemoveCommand() {
+  private pushCleanVolumesCommand() {
+    let me = this;
+    let cleanVolumesCommand = new CommandImpl();
+    cleanVolumesCommand.aliases = ['clean-volumes', 'cv'];
+    cleanVolumesCommand.commandDesc = 'Clean orphaned Docker resources';
+    cleanVolumesCommand.handler = (argv)=> {
+      var script = require('path').join(__dirname, '../../legacy/_docker-cleanup-volumes.sh');
+      me.sudoSpawn([ '/bin/bash', '-c', script ], (err:Error)=>{
+        me.processExitWithError(err);
+      });
+    };
+    this.subCommands.push(cleanVolumesCommand);
+  }
+
+  private pushRemoveImagesCommand() {
+    let removeCommand = new CommandImpl();
+    removeCommand.aliases = ['rmi'];
+    removeCommand.commandDesc = 'Remove Docker images';
+    removeCommand.handler = (argv)=> {
+      this.firmamentDocker.removeImages(argv._.slice(2), (err:Error)=> {
+        this.processExitWithError(err);
+      });
+    };
+    this.subCommands.push(removeCommand);
+  }
+
+  private pushRemoveContainersCommand() {
     let removeCommand = new CommandImpl();
     removeCommand.aliases = ['rm'];
     removeCommand.commandDesc = 'Remove Docker containers';
     removeCommand.handler = (argv)=> {
       this.firmamentDocker.removeContainers(argv._.slice(2),
-        (err:Error, crr:ContainerRemoveResults[])=> {
-          this.processExitWithError(err, crr && crr.length && crr[0] ? crr[0].msg : '');
+        (err:Error)=> {
+          this.processExitWithError(err);
         });
     };
     this.subCommands.push(removeCommand);
@@ -125,24 +153,24 @@ export class DockerCommand extends CommandImpl {
     this.firmamentDocker.exec(ids[0].toString(), '/bin/bash', cb);
   }
 
-  private prettyPrintDockerImagesList(err:Error, images:any[], cb:()=>void) {
+  private prettyPrintDockerImagesList(err:Error, images:DockerImage[], cb:()=>void) {
     if (!images || !images.length) {
       let msg = this.returnErrorStringOrMessage(err, '\nNo images\n');
       console.log(msg);
     } else {
       var timeAgo = require('time-ago')();
       var fileSize = require('filesize');
-      CommandLineImpl.printTable(images.map(container=> {
+      CommandLineImpl.printTable(images.map(image=> {
         try {
-          var ID = container.firmamentId;
-          var repoTags = container.RepoTags[0].split(':');
+          var ID = image.firmamentId;
+          var repoTags = image.RepoTags[0].split(':');
           var Repository = repoTags[0];
           var Tag = repoTags[1];
-          var ImageId = container.Id.substring(7, 19);
+          var ImageId = image.Id.substring(7, 19);
           var nowTicks = +new Date();
-          var tickDiff = nowTicks - (1000 * container.Created);
+          var tickDiff = nowTicks - (1000 * image.Created);
           var Created = timeAgo.ago(nowTicks - tickDiff);
-          var Size = fileSize(container.Size);
+          var Size = fileSize(image.Size);
         } catch (err) {
           console.log(err.message);
         }

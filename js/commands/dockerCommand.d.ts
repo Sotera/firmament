@@ -5,7 +5,9 @@ export declare class DockerCommand extends CommandImpl {
     static progressBar: ProgressBar;
     constructor();
     private buildCommandTree();
-    private pushRemoveCommand();
+    private pushCleanVolumesCommand();
+    private pushRemoveImagesCommand();
+    private pushRemoveContainersCommand();
     private pushShellCommand();
     private pushStartCommand();
     private pushStopCommand();

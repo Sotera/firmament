@@ -1,6 +1,6 @@
 import {CommandImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
 import {
-  FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults, Container, ExpressApp,
+  FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults, DockerContainer, ExpressApp,
   DockerDescriptors, ContainerConfig
 } from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
@@ -134,8 +134,11 @@ export class MakeCommand extends CommandImpl {
           });
           let missingImageNames:string[] = [];
           containerConfigs.forEach(containerConfig=> {
-            if (!repoTags[containerConfig.Image]) {
-              missingImageNames.push(containerConfig.Image);
+            let imageName = (containerConfig.Image.indexOf(':') == -1)
+              ? containerConfig.Image + ':latest'
+              : containerConfig.Image;
+            if (!repoTags[imageName]) {
+              missingImageNames.push(imageName);
             }
           });
           cb(null, _.uniq(missingImageNames));
@@ -193,11 +196,11 @@ export class MakeCommand extends CommandImpl {
           //noinspection JSUnusedLocalSymbols
           async.mapSeries(sortedContainerConfigs,
             (containerConfig, cb:(err:Error, result:any)=>void)=> {
-              this.firmamentDocker.createContainer(containerConfig, (err:ErrorEx, container:Container)=> {
+              this.firmamentDocker.createContainer(containerConfig, (err:ErrorEx, container:DockerContainer)=> {
                 self.logAndCallback('Container "' + containerConfig.name + '" created.', cb, err, container);
               });
             },
-            (err:Error, containers:Container[])=> {
+            (err:Error, containers:DockerContainer[])=> {
               if (self.callbackIfError(cb, err)) {
                 return;
               }
@@ -235,7 +238,10 @@ export class MakeCommand extends CommandImpl {
                       async.mapSeries(expressApp.Scripts || [],
                         (script, cb:(err:Error, result:any)=>void)=> {
                           let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
-                          self.spawnShellCommand(script.Command, script.Args, {cwd, stdio: null}, cb);
+                          let cmd = [];
+                          cmd.push(script.Command);
+                          cmd = cmd.concat(script.Args);
+                          self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
                         },
                         (err:Error, results:any)=> {
                           cb(null, null);
@@ -244,12 +250,16 @@ export class MakeCommand extends CommandImpl {
                     (cb:(err:Error, result:any)=>void)=> {
                       let cwd = expressApp.GitCloneFolder;
                       console.log('StrongLoop Building @ ' + cwd);
-                      self.spawnShellCommand('slc', ['build'], {cwd, stdio: null}, cb);
+                      self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
                     },
                     (cb:(err:Error, result:any)=>void)=> {
                       let cwd = expressApp.GitCloneFolder;
                       console.log('StrongLoop Deploying @ ' + cwd);
-                      self.spawnShellCommand('slc', ['deploy', expressApp.StrongLoopServerUrl], {cwd, stdio: null}, cb);
+                      self.spawnShellCommand(['slc', 'deploy', '--service=' + expressApp.ServiceName,
+                        expressApp.StrongLoopServerUrl], {
+                        cwd,
+                        stdio: null
+                      }, cb);
                     }
                   ],
                   (err:Error, results:any)=> {
@@ -336,7 +346,7 @@ export class MakeCommand extends CommandImpl {
   }
 
   private gitClone(gitUrl:string, gitBranch:string, localFolder:string, cb:(err:Error, child:any)=>void) {
-    this.spawnShellCommand('git', ['clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
+    this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
   }
 }
 

@@ -128,8 +128,11 @@ var MakeCommand = (function (_super) {
                     });
                     var missingImageNames = [];
                     containerConfigs.forEach(function (containerConfig) {
-                        if (!repoTags[containerConfig.Image]) {
-                            missingImageNames.push(containerConfig.Image);
+                        var imageName = (containerConfig.Image.indexOf(':') == -1)
+                            ? containerConfig.Image + ':latest'
+                            : containerConfig.Image;
+                        if (!repoTags[imageName]) {
+                            missingImageNames.push(imageName);
                         }
                     });
                     cb(null, _.uniq(missingImageNames));
@@ -207,7 +210,10 @@ var MakeCommand = (function (_super) {
                             function (cb) {
                                 async.mapSeries(expressApp.Scripts || [], function (script, cb) {
                                     var cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
-                                    self.spawnShellCommand(script.Command, script.Args, { cwd: cwd, stdio: null }, cb);
+                                    var cmd = [];
+                                    cmd.push(script.Command);
+                                    cmd = cmd.concat(script.Args);
+                                    self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
                                 }, function (err, results) {
                                     cb(null, null);
                                 });
@@ -215,12 +221,16 @@ var MakeCommand = (function (_super) {
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
                                 console.log('StrongLoop Building @ ' + cwd);
-                                self.spawnShellCommand('slc', ['build'], { cwd: cwd, stdio: null }, cb);
+                                self.spawnShellCommand(['slc', 'build'], { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
                                 console.log('StrongLoop Deploying @ ' + cwd);
-                                self.spawnShellCommand('slc', ['deploy', expressApp.StrongLoopServerUrl], { cwd: cwd, stdio: null }, cb);
+                                self.spawnShellCommand(['slc', 'deploy', '--service=' + expressApp.ServiceName,
+                                    expressApp.StrongLoopServerUrl], {
+                                    cwd: cwd,
+                                    stdio: null
+                                }, cb);
                             }
                         ], function (err, results) {
                             cb(null, null);
@@ -297,7 +307,7 @@ var MakeCommand = (function (_super) {
         return sorted;
     };
     MakeCommand.prototype.gitClone = function (gitUrl, gitBranch, localFolder, cb) {
-        this.spawnShellCommand('git', ['clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
+        this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
     };
     MakeCommand.defaultConfigFilename = 'firmament.json';
     MakeCommand.jsonFileExtension = '.json';
