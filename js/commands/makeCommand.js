@@ -208,6 +208,20 @@ var MakeCommand = (function (_super) {
                                 });
                             },
                             function (cb) {
+                                if (!expressApp.DoBowerInstall) {
+                                    cb(null);
+                                    return;
+                                }
+                                var cwd = expressApp.GitCloneFolder;
+                                console.log('Running `bower install --config.interactive=false` @ ' + cwd);
+                                self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], { cwd: cwd, stdio: null }, cb);
+                            },
+                            function (cb) {
+                                var cwd = expressApp.GitCloneFolder;
+                                console.log('Running `npm install --ignore-scripts` @ ' + cwd);
+                                self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], { cwd: cwd, stdio: null }, cb);
+                            },
+                            function (cb) {
                                 async.mapSeries(expressApp.Scripts || [], function (script, cb) {
                                     var cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
                                     var cmd = [];
@@ -222,6 +236,38 @@ var MakeCommand = (function (_super) {
                                 var cwd = expressApp.GitCloneFolder;
                                 console.log('StrongLoop Building @ ' + cwd);
                                 self.spawnShellCommand(['slc', 'build'], { cwd: cwd, stdio: null }, cb);
+                            },
+                            function (cb) {
+                                var cwd = expressApp.GitCloneFolder;
+                                console.log('Creating StrongLoop App: "' + expressApp.ServiceName + '" @ ' + cwd);
+                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl, 'create', expressApp.ServiceName];
+                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
+                            },
+                            function (cb) {
+                                if (!expressApp.ClusterSize) {
+                                    cb(null);
+                                    return;
+                                }
+                                var clusterSize = expressApp.ClusterSize || 1;
+                                var cwd = expressApp.GitCloneFolder;
+                                var serviceName = expressApp.ServiceName;
+                                console.log('Setting cluster size for: "' + serviceName + '" to ' + clusterSize + ' @ ' + cwd);
+                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
+                                    'set-size', serviceName, clusterSize.toString()];
+                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
+                            },
+                            function (cb) {
+                                if (!expressApp.ServicePort) {
+                                    cb(null);
+                                    return;
+                                }
+                                var servicePort = expressApp.ServicePort || 1;
+                                var cwd = expressApp.GitCloneFolder;
+                                var serviceName = expressApp.ServiceName;
+                                console.log('Setting service port for: "' + serviceName + '" to ' + servicePort + ' @ ' + cwd);
+                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
+                                    'env-set', serviceName, 'PORT=' + servicePort.toString()];
+                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;

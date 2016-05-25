@@ -223,7 +223,7 @@ export class MakeCommand extends CommandImpl {
               (expressApp:ExpressApp, cb:(err:Error, result:any)=>void)=> {
                 //noinspection JSUnusedLocalSymbols
                 async.series([
-                    (cb:(err:Error, result:any)=>void)=> {
+                    (cb:(err:Error, result:any)=>void)=> {//Clone Express app Git Repo
                       let cwd = process.cwd();
                       expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
                       self.gitClone(expressApp.GitUrl,
@@ -233,7 +233,22 @@ export class MakeCommand extends CommandImpl {
                           cb(null, null);
                         });
                     },
+                    (cb:(err:Error, result?:any)=>void)=> {//Perform Bower install if required
+                      if (!expressApp.DoBowerInstall) {
+                        cb(null);
+                        return;
+                      }
+                      let cwd = expressApp.GitCloneFolder;
+                      console.log('Running `bower install --config.interactive=false` @ ' + cwd);
+                      self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {cwd, stdio: null}, cb);
+                    },
                     (cb:(err:Error, result:any)=>void)=> {
+                      //Perform NPM install --ignore-scripts in case any scripts require node_modules
+                      let cwd = expressApp.GitCloneFolder;
+                      console.log('Running `npm install --ignore-scripts` @ ' + cwd);
+                      self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//Execute local scripts
                       //noinspection JSUnusedLocalSymbols
                       async.mapSeries(expressApp.Scripts || [],
                         (script, cb:(err:Error, result:any)=>void)=> {
@@ -247,10 +262,42 @@ export class MakeCommand extends CommandImpl {
                           cb(null, null);
                         });
                     },
-                    (cb:(err:Error, result:any)=>void)=> {
+                    (cb:(err:Error, result:any)=>void)=> {//Perform Strongloop build
                       let cwd = expressApp.GitCloneFolder;
                       console.log('StrongLoop Building @ ' + cwd);
                       self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
+                      let cwd = expressApp.GitCloneFolder;
+                      console.log('Creating StrongLoop App: "' + expressApp.ServiceName + '" @ ' + cwd);
+                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl, 'create', expressApp.ServiceName];
+                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result?:any)=>void)=> {//Set ClusterSize
+                      if (!expressApp.ClusterSize) {
+                        cb(null);
+                        return;
+                      }
+                      let clusterSize = expressApp.ClusterSize || 1;
+                      let cwd = expressApp.GitCloneFolder;
+                      let serviceName = expressApp.ServiceName;
+                      console.log('Setting cluster size for: "' + serviceName + '" to ' + clusterSize + ' @ ' + cwd);
+                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
+                        'set-size', serviceName, clusterSize.toString()];
+                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result?:any)=>void)=> {//Set ServicePort
+                      if (!expressApp.ServicePort) {
+                        cb(null);
+                        return;
+                      }
+                      let servicePort = expressApp.ServicePort || 1;
+                      let cwd = expressApp.GitCloneFolder;
+                      let serviceName = expressApp.ServiceName;
+                      console.log('Setting service port for: "' + serviceName + '" to ' + servicePort + ' @ ' + cwd);
+                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
+                        'env-set', serviceName, 'PORT=' + servicePort.toString()];
+                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
                     },
                     (cb:(err:Error, result:any)=>void)=> {
                       let cwd = expressApp.GitCloneFolder;
