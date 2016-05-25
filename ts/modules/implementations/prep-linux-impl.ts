@@ -21,9 +21,45 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
       },
       function (cb:(err:Error)=>void) {
         me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
-      },
-      function (cb:(err?:Error)=>void) {
-        me.sudoSpawn(['ps', '-Fel'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'update'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'apt-transport-https', 'ca-certificates'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-key', 'adv', '--keyserver', 'hkp://p80.pool.sks-keyservers.net:80', '--recv-keys',
+          '58118E89F3A912897C070ADBF76221572C52609D'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['/bin/sh', '-c',
+            'echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" > /etc/apt/sources.list.d/docker.list'],
+          cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'update'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-cache', 'policy', 'docker-engine'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'update'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'linux-image-extra-$(uname -r)'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'docker-engine'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['service', 'docker', 'start'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['usermod', '-aG', 'docker', '$(whoami)'], cb);
       }
     ], cb);
   }

@@ -27,7 +27,42 @@ var PrepLinuxImpl = (function (_super) {
                 me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
             },
             function (cb) {
-                me.sudoSpawn(['ps', '-Fel'], cb);
+                me.sudoSpawn(['apt-get', 'update'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'apt-transport-https', 'ca-certificates'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-key', 'adv', '--keyserver', 'hkp://p80.pool.sks-keyservers.net:80', '--recv-keys',
+                    '58118E89F3A912897C070ADBF76221572C52609D'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['/bin/sh', '-c',
+                    'echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" > /etc/apt/sources.list.d/docker.list'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'update'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-cache', 'policy', 'docker-engine'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'update'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'linux-image-extra-$(uname -r)'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'docker-engine'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['service', 'docker', 'start'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['usermod', '-aG', 'docker', '$(whoami)'], cb);
             }
         ], cb);
     };
