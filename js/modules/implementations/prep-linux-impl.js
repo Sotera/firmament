@@ -15,16 +15,16 @@ var PrepLinuxImpl = (function (_super) {
         var me = this;
         async.series([
             function (cb) {
-                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set -o vi" >> ~/.bashrc'], cb);
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set -o vi" >> ~/.bashrc'], null, cb);
             },
             function (cb) {
-                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], cb);
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], null, cb);
             },
             function (cb) {
-                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], cb);
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], null, cb);
             },
             function (cb) {
-                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], cb);
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
             },
             function (cb) {
                 me.sudoSpawn(['ps', '-Fel'], cb);

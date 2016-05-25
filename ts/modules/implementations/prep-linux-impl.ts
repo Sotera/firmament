@@ -11,16 +11,16 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
     var me = this;
     async.series([
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand(['/bin/sh', '-c', 'echo "set -o vi" >> ~/.bashrc'], cb);
+        me.spawnShellCommand(['/bin/sh', '-c', 'echo "set -o vi" >> ~/.bashrc'], null, cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], cb);
+        me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], null, cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], cb);
+        me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], null, cb);
       },
       function (cb:(err:Error)=>void) {
-        me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], cb);
+        me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
       },
       function (cb:(err?:Error)=>void) {
         me.sudoSpawn(['ps', '-Fel'], cb);
