@@ -1,6 +1,6 @@
 {
   "name": "firmament",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Docker management script",
   "main": "js/firmament.js",
   "preferGlobal": true,

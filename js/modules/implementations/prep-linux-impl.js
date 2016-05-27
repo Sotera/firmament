@@ -62,6 +62,9 @@ var PrepLinuxImpl = (function (_super) {
                 me.sudoSpawn(['apt-get', 'install', '-y', 'build-essential'], cb);
             },
             function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'git'], cb);
+            },
+            function (cb) {
                 me.spawnShellCommand(['git', 'config', '--global', 'user.email', '"nobody@nowhere.com"'], null, cb);
             },
             function (cb) {
