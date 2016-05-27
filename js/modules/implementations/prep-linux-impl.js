@@ -56,6 +56,18 @@ var PrepLinuxImpl = (function (_super) {
                 });
             },
             function (cb) {
+                me.sudoSpawn(['npm', 'install', '-g', 'strongloop'], cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'build-essential'], cb);
+            },
+            function (cb) {
+                me.spawnShellCommand(['git', 'config', '--global', 'user.email', '"nobody@nowhere.com"'], null, cb);
+            },
+            function (cb) {
+                me.spawnShellCommand(['git', 'config', '--global', 'user.name', '"nobody"'], null, cb);
+            },
+            function (cb) {
                 me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
             },
             function (cb) {

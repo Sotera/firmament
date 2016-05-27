@@ -47,10 +47,22 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         me.sudoSpawn(['apt-get', 'update'], cb);
       }
       , function (cb:(err?:Error)=>void) {
-        me.spawnShellCommandAsync(['uname', '-r'], (err,result)=>{
-          var uname = result.replace('\n','');
+        me.spawnShellCommandAsync(['uname', '-r'], (err, result)=> {
+          var uname = result.replace('\n', '');
           me.sudoSpawn(['apt-get', 'install', '-y', 'linux-image-extra-' + uname], cb);
         });
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['npm', 'install', '-g', 'strongloop'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'build-essential'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.spawnShellCommand(['git', 'config', '--global', 'user.email', '"nobody@nowhere.com"'], null, cb);
+      }
+      , function (cb:(err?:Error)=>void) {
+        me.spawnShellCommand(['git', 'config', '--global', 'user.name', '"nobody"'], null, cb);
       }
       , function (cb:(err?:Error)=>void) {
         me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
@@ -62,8 +74,8 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         me.sudoSpawn(['service', 'docker', 'start'], cb);
       }
       , function (cb:(err?:Error)=>void) {
-        me.spawnShellCommandAsync(['whoami'], (err,result)=>{
-          var whoami = result.replace('\n','');
+        me.spawnShellCommandAsync(['whoami'], (err, result)=> {
+          var whoami = result.replace('\n', '');
           me.sudoSpawn(['usermod', '-aG', 'docker', whoami], cb);
         });
       }
