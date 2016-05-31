@@ -56,6 +56,9 @@ var PrepLinuxImpl = (function (_super) {
                 });
             },
             function (cb) {
+                me.sudoSpawn(['npm', 'install', '-g', 'bower'], cb);
+            },
+            function (cb) {
                 me.sudoSpawn(['npm', 'install', '-g', 'strongloop'], cb);
             },
             function (cb) {

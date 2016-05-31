@@ -53,6 +53,9 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         });
       }
       , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['npm', 'install', '-g', 'bower'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
         me.sudoSpawn(['npm', 'install', '-g', 'strongloop'], cb);
       }
       , function (cb:(err?:Error)=>void) {
