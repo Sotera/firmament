@@ -13,6 +13,7 @@ export declare class MakeCommand extends CommandImpl {
     private static getJsonConfigFilePath(filename);
     private processContainerConfigs(containerConfigs);
     private static writeJsonTemplateFile(fullOutputPath, writeFullTemplate);
+    private remoteSlcCtlCommand(msg, expressApp, cmd, cb);
     private containerDependencySort(containerConfigs);
     private topologicalDependencySort(graph);
     private gitClone(gitUrl, gitBranch, localFolder, cb);

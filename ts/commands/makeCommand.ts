@@ -226,12 +226,36 @@ export class MakeCommand extends CommandImpl {
                     (cb:(err:Error, result:any)=>void)=> {//Clone Express app Git Repo
                       let cwd = process.cwd();
                       expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
+                      cb(null, expressApp.GitCloneFolder);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//Clone Express app Git Repo
                       self.gitClone(expressApp.GitUrl,
                         expressApp.GitSrcBranchName,
                         expressApp.GitCloneFolder, (err:Error)=> {
                           self.logError(err);
-                          cb(null, null);
+                          cb(err, null);
                         });
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//Make sure there's a Strongloop PM listening
+                      let retries:number = 3;
+                      var timer = setInterval(function checkForStrongloop() {
+                        self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [],
+                          (err:Error)=> {
+                            if (!err) {
+                              retries = -1;
+                            } else {
+                              console.log(err.message);
+                            }
+                            if (--retries < 0) {
+                              clearInterval(timer);
+                              cb(err, null);
+                            }
+                          });
+                      }, 3000);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
+                      let serviceName = expressApp.ServiceName;
+                      self.remoteSlcCtlCommand('Creating ' + serviceName, expressApp, ['create', serviceName], cb);
                     },
                     (cb:(err:Error, result?:any)=>void)=> {//Perform Bower install if required
                       if (!expressApp.DoBowerInstall) {
@@ -239,13 +263,11 @@ export class MakeCommand extends CommandImpl {
                         return;
                       }
                       let cwd = expressApp.GitCloneFolder;
-                      console.log('Running `bower install --config.interactive=false` @ ' + cwd);
                       self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {cwd, stdio: null}, cb);
                     },
                     (cb:(err:Error, result:any)=>void)=> {
                       //Perform NPM install --ignore-scripts in case any scripts require node_modules
                       let cwd = expressApp.GitCloneFolder;
-                      console.log('Running `npm install --ignore-scripts` @ ' + cwd);
                       self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], {cwd, stdio: null}, cb);
                     },
                     (cb:(err:Error, result:any)=>void)=> {//Execute local scripts
@@ -253,53 +275,38 @@ export class MakeCommand extends CommandImpl {
                       async.mapSeries(expressApp.Scripts || [],
                         (script, cb:(err:Error, result:any)=>void)=> {
                           let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
-                          let cmd = [];
-                          cmd.push(script.Command);
+                          let cmd = [script.Command];
                           cmd = cmd.concat(script.Args);
                           self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
                         },
                         (err:Error, results:any)=> {
-                          cb(null, null);
+                          cb(err, null);
                         });
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Perform Strongloop build
-                      let cwd = expressApp.GitCloneFolder;
-                      console.log('StrongLoop Building @ ' + cwd);
-                      self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
-                      let cwd = expressApp.GitCloneFolder;
-                      console.log('Creating StrongLoop App: "' + expressApp.ServiceName + '" @ ' + cwd);
-                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl, 'create', expressApp.ServiceName];
-                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
                     },
                     (cb:(err:Error, result?:any)=>void)=> {//Set ClusterSize
                       if (!expressApp.ClusterSize) {
                         cb(null);
                         return;
                       }
-                      let clusterSize = expressApp.ClusterSize || 1;
-                      let cwd = expressApp.GitCloneFolder;
-                      let serviceName = expressApp.ServiceName;
-                      console.log('Setting cluster size for: "' + serviceName + '" to ' + clusterSize + ' @ ' + cwd);
-                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
-                        'set-size', serviceName, clusterSize.toString()];
-                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
+                      let clusterSize = expressApp.ClusterSize.toString();
+                      self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize,
+                        expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
                     },
-                    (cb:(err:Error, result?:any)=>void)=> {//Set ServicePort
-                      if (!expressApp.ServicePort) {
-                        cb(null);
-                        return;
+                    (cb:(err:Error, result?:any)=>void)=> {//Set ExpressApp environment
+                      expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
+                      let cmd = ['env-set', expressApp.ServiceName];
+                      for (let environmentVariable in expressApp.EnvironmentVariables) {
+                        cmd.push(environmentVariable
+                          + '='
+                          + expressApp.EnvironmentVariables[environmentVariable]);
                       }
-                      let servicePort = expressApp.ServicePort || 1;
-                      let cwd = expressApp.GitCloneFolder;
-                      let serviceName = expressApp.ServiceName;
-                      console.log('Setting service port for: "' + serviceName + '" to ' + servicePort + ' @ ' + cwd);
-                      var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
-                        'env-set', serviceName, 'PORT=' + servicePort.toString()];
-                      self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
+                      self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
                     },
-                    (cb:(err:Error, result:any)=>void)=> {
+                    (cb:(err:Error, result:any)=>void)=> {//Perform Strongloop build ...
+                      let cwd = expressApp.GitCloneFolder;
+                      self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
+                    },
+                    (cb:(err:Error, result:any)=>void)=> {//... and Strongloop deploy
                       let cwd = expressApp.GitCloneFolder;
                       console.log('StrongLoop Deploying @ ' + cwd);
                       self.spawnShellCommand(['slc', 'deploy', '--service=' + expressApp.ServiceName,
@@ -334,6 +341,16 @@ export class MakeCommand extends CommandImpl {
     var jsonFile = require('jsonfile');
     jsonFile.spaces = 2;
     jsonFile.writeFileSync(fullOutputPath, objectToWrite);
+  }
+
+  private remoteSlcCtlCommand(msg:string, expressApp:ExpressApp, cmd:string[], cb:(err:Error, result?:any)=>void) {
+    let cwd = expressApp.GitCloneFolder;
+    let serviceName = expressApp.ServiceName;
+    let serverUrl = expressApp.StrongLoopServerUrl;
+    console.log(msg + ' "' + serviceName + '" @ "' + cwd + '" via "' + serverUrl + '"');
+    var baseCmd = ['slc', 'ctl', '-C', serverUrl];
+    Array.prototype.push.apply(baseCmd, cmd);
+    this.spawnShellCommand(baseCmd, {cwd, stdio: null}, cb);
   }
 
   private containerDependencySort(containerConfigs) {
@@ -393,7 +410,8 @@ export class MakeCommand extends CommandImpl {
   }
 
   private gitClone(gitUrl:string, gitBranch:string, localFolder:string, cb:(err:Error, child:any)=>void) {
-    this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
+    this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder],
+      {cwd: process.cwd()}, cb);
   }
 }
 

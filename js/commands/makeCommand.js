@@ -202,10 +202,34 @@ var MakeCommand = (function (_super) {
                             function (cb) {
                                 var cwd = process.cwd();
                                 expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
+                                cb(null, expressApp.GitCloneFolder);
+                            },
+                            function (cb) {
                                 self.gitClone(expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder, function (err) {
                                     self.logError(err);
-                                    cb(null, null);
+                                    cb(err, null);
                                 });
+                            },
+                            function (cb) {
+                                var retries = 3;
+                                var timer = setInterval(function checkForStrongloop() {
+                                    self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [], function (err) {
+                                        if (!err) {
+                                            retries = -1;
+                                        }
+                                        else {
+                                            console.log(err.message);
+                                        }
+                                        if (--retries < 0) {
+                                            clearInterval(timer);
+                                            cb(err, null);
+                                        }
+                                    });
+                                }, 3000);
+                            },
+                            function (cb) {
+                                var serviceName = expressApp.ServiceName;
+                                self.remoteSlcCtlCommand('Creating ' + serviceName, expressApp, ['create', serviceName], cb);
                             },
                             function (cb) {
                                 if (!expressApp.DoBowerInstall) {
@@ -213,61 +237,43 @@ var MakeCommand = (function (_super) {
                                     return;
                                 }
                                 var cwd = expressApp.GitCloneFolder;
-                                console.log('Running `bower install --config.interactive=false` @ ' + cwd);
                                 self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
-                                console.log('Running `npm install --ignore-scripts` @ ' + cwd);
                                 self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 async.mapSeries(expressApp.Scripts || [], function (script, cb) {
                                     var cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
-                                    var cmd = [];
-                                    cmd.push(script.Command);
+                                    var cmd = [script.Command];
                                     cmd = cmd.concat(script.Args);
                                     self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
                                 }, function (err, results) {
-                                    cb(null, null);
+                                    cb(err, null);
                                 });
-                            },
-                            function (cb) {
-                                var cwd = expressApp.GitCloneFolder;
-                                console.log('StrongLoop Building @ ' + cwd);
-                                self.spawnShellCommand(['slc', 'build'], { cwd: cwd, stdio: null }, cb);
-                            },
-                            function (cb) {
-                                var cwd = expressApp.GitCloneFolder;
-                                console.log('Creating StrongLoop App: "' + expressApp.ServiceName + '" @ ' + cwd);
-                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl, 'create', expressApp.ServiceName];
-                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 if (!expressApp.ClusterSize) {
                                     cb(null);
                                     return;
                                 }
-                                var clusterSize = expressApp.ClusterSize || 1;
-                                var cwd = expressApp.GitCloneFolder;
-                                var serviceName = expressApp.ServiceName;
-                                console.log('Setting cluster size for: "' + serviceName + '" to ' + clusterSize + ' @ ' + cwd);
-                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
-                                    'set-size', serviceName, clusterSize.toString()];
-                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
+                                var clusterSize = expressApp.ClusterSize.toString();
+                                self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize, expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
                             },
                             function (cb) {
-                                if (!expressApp.ServicePort) {
-                                    cb(null);
-                                    return;
+                                expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
+                                var cmd = ['env-set', expressApp.ServiceName];
+                                for (var environmentVariable in expressApp.EnvironmentVariables) {
+                                    cmd.push(environmentVariable
+                                        + '='
+                                        + expressApp.EnvironmentVariables[environmentVariable]);
                                 }
-                                var servicePort = expressApp.ServicePort || 1;
+                                self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
+                            },
+                            function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
-                                var serviceName = expressApp.ServiceName;
-                                console.log('Setting service port for: "' + serviceName + '" to ' + servicePort + ' @ ' + cwd);
-                                var cmd = ['slc', 'ctl', '-C', expressApp.StrongLoopServerUrl,
-                                    'env-set', serviceName, 'PORT=' + servicePort.toString()];
-                                self.spawnShellCommand(cmd, { cwd: cwd, stdio: null }, cb);
+                                self.spawnShellCommand(['slc', 'build'], { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
@@ -300,6 +306,15 @@ var MakeCommand = (function (_super) {
         var jsonFile = require('jsonfile');
         jsonFile.spaces = 2;
         jsonFile.writeFileSync(fullOutputPath, objectToWrite);
+    };
+    MakeCommand.prototype.remoteSlcCtlCommand = function (msg, expressApp, cmd, cb) {
+        var cwd = expressApp.GitCloneFolder;
+        var serviceName = expressApp.ServiceName;
+        var serverUrl = expressApp.StrongLoopServerUrl;
+        console.log(msg + ' "' + serviceName + '" @ "' + cwd + '" via "' + serverUrl + '"');
+        var baseCmd = ['slc', 'ctl', '-C', serverUrl];
+        Array.prototype.push.apply(baseCmd, cmd);
+        this.spawnShellCommand(baseCmd, { cwd: cwd, stdio: null }, cb);
     };
     MakeCommand.prototype.containerDependencySort = function (containerConfigs) {
         var sortedContainerConfigs = [];
@@ -353,7 +368,7 @@ var MakeCommand = (function (_super) {
         return sorted;
     };
     MakeCommand.prototype.gitClone = function (gitUrl, gitBranch, localFolder, cb) {
-        this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], null, cb);
+        this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], { cwd: process.cwd() }, cb);
     };
     MakeCommand.defaultConfigFilename = 'firmament.json';
     MakeCommand.jsonFileExtension = '.json';
