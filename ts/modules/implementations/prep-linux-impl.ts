@@ -71,6 +71,9 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         me.spawnShellCommand(['git', 'config', '--global', 'user.name', '"nobody"'], null, cb);
       }
       , function (cb:(err?:Error)=>void) {
+        me.sudoSpawn(['apt-get', 'install', '-y', 'supervisor'], cb);
+      }
+      , function (cb:(err?:Error)=>void) {
         me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
       }
       , function (cb:(err?:Error)=>void) {

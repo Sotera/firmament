@@ -74,6 +74,9 @@ var PrepLinuxImpl = (function (_super) {
                 me.spawnShellCommand(['git', 'config', '--global', 'user.name', '"nobody"'], null, cb);
             },
             function (cb) {
+                me.sudoSpawn(['apt-get', 'install', '-y', 'supervisor'], cb);
+            },
+            function (cb) {
                 me.sudoSpawn(['apt-get', 'install', '-y', 'apparmor'], cb);
             },
             function (cb) {
