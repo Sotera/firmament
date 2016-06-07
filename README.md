@@ -6,7 +6,7 @@ Provides a simplified configuration of interconnected [Docker containers](https:
 
 # How To Get firmament
 
-## Install Node & Firmament with the _install_node shell script
+## Install Node & Firmament with shell script (Easiest)
 ```
 wget https://raw.githubusercontent.com/Sotera/firmament/typescript/_install_node.sh
 sudo chmod 700 _install_node
