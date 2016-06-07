@@ -5,6 +5,20 @@ Provides a simplified configuration of interconnected [Docker containers](https:
 * Composed of Node and Bash scripts utilizing API's from Docker, GIT, and Strongloop.
 
 # How To Get firmament
+
+## Install Node & Firmament with the _install_node shell script
+```
+Install Node & Firmament all in One
+___
+wget https://raw.githubusercontent.com/Sotera/firmament/typescript/_install_node.sh
+sudo chmod 700 _install_node
+./_install_node
+firmament lp ubuntu-14.04
+___
+close your terminal and log back in for changes to take effect.
+```
+
+## Manually install firmament
 ```Bash
 $ wget https://github.com/sotera/firmament/raw/master/install-scripts/prep-ubuntu14.04.sh
 $ sudo chmod 700 prep_ubuntu14.04.sh
@@ -16,8 +30,9 @@ $ cd firmament/install-scripts
 $ ./prep-client.sh
 >> 3 for using vim
 $ sudo usermod -aG docker ubuntu
-```
+___
 close your terminal and log back in for changes to take effect.
+```
 
 # Usage
 * List available commands ```$ f --help```
