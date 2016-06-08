@@ -15,3 +15,4 @@ sudo sh -c "curl https://nodejs.org/dist/v5.9.1/node-v5.9.1-linux-x64.tar.xz | t
 #sudo ln -s /var/local/node-v5.9.1-linux-x64/bin/node /usr/local/bin/
 #sudo ln -s /var/local/node-v5.9.1-linux-x64/bin/npm /usr/local/bin/
 sudo npm i -g firmament
+firmament lp ubuntu-14.04
