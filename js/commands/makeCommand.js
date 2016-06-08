@@ -8,6 +8,7 @@ var firmament_yargs_1 = require('firmament-yargs');
 var firmament_docker_1 = require("firmament-docker");
 var log = require('jsnlog').JL();
 var async = require('async');
+var fs = require('fs');
 var positive = require('positive');
 var _ = require('lodash');
 var MakeCommand = (function (_super) {
@@ -54,12 +55,6 @@ var MakeCommand = (function (_super) {
         buildCommand.aliases = ['build', 'b'];
         buildCommand.commandDesc = 'Build Docker containers based on JSON spec';
         buildCommand.options = {
-            verbose: {
-                alias: 'v',
-                default: false,
-                type: 'boolean',
-                desc: 'Name the config JSON file'
-            },
             input: {
                 alias: 'i',
                 default: MakeCommand.defaultConfigFilename,
@@ -201,13 +196,40 @@ var MakeCommand = (function (_super) {
                         async.series([
                             function (cb) {
                                 var cwd = process.cwd();
-                                expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
-                                cb(null, expressApp.GitCloneFolder);
+                                var serviceName = expressApp.ServiceName;
+                                if (expressApp.DeployExisting) {
+                                    var serviceSourceFolders = fs.readdirSync(cwd).filter(function (fileName) {
+                                        return fileName.substring(0, serviceName.length) === serviceName;
+                                    });
+                                    if (serviceSourceFolders.length > 1) {
+                                        var msg = 'DeployExisting was specified but there is more than one service named: ';
+                                        msg += serviceName + ': ' + serviceSourceFolders + '. Delete all but one and retry.';
+                                        cb(new Error(msg));
+                                    }
+                                    else if (serviceSourceFolders.length > 0) {
+                                        expressApp.GitCloneFolder = cwd + '/' + serviceSourceFolders[0];
+                                    }
+                                    else {
+                                        expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
+                                    }
+                                }
+                                cb(null);
                             },
                             function (cb) {
-                                self.gitClone(expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder, function (err) {
-                                    self.logError(err);
-                                    cb(err, null);
+                                fs.stat(expressApp.GitCloneFolder, function (err, stats) {
+                                    if (err) {
+                                        if (err.errno === 34) {
+                                            self.gitClone(expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder, function (err) {
+                                                cb(err);
+                                            });
+                                        }
+                                        else {
+                                            cb(err);
+                                        }
+                                    }
+                                    else {
+                                        cb(null);
+                                    }
                                 });
                             },
                             function (cb) {
@@ -284,18 +306,12 @@ var MakeCommand = (function (_super) {
                                     stdio: null
                                 }, cb);
                             }
-                        ], function (err, results) {
-                            cb(null, null);
-                        });
-                    }, function (err, results) {
-                        cb(null, null);
-                    });
-                }, function (err, results) {
-                    cb(null, null);
-                });
+                        ], cb);
+                    }, cb);
+                }, cb);
             }
         ], function (err, results) {
-            self.processExit();
+            self.processExitWithError(err);
         });
     };
     MakeCommand.writeJsonTemplateFile = function (fullOutputPath, writeFullTemplate) {

@@ -30,6 +30,7 @@
     "ExpressApps": [
       {
         "GitUrl": "https://github.com/Sotera/genie-ui.git",
+        "DeployExisting": true,
         "GitSrcBranchName": "master",
         "StrongLoopBranchName": "deploy",
         "StrongLoopServerUrl": "http://localhost:8701",
@@ -56,6 +57,7 @@
       },
       {
         "GitUrl": "https://github.com/Sotera/genie-ui.git",
+        "DeployExisting": true,
         "GitSrcBranchName": "master",
         "StrongLoopBranchName": "deploy",
         "StrongLoopServerUrl": "http://localhost:8701",

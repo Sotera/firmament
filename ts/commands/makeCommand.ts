@@ -5,6 +5,7 @@ import {
 } from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
+const fs = require('fs');
 const positive = require('positive');
 import * as _ from 'lodash';
 interface ErrorEx extends Error {
@@ -59,12 +60,6 @@ export class MakeCommand extends CommandImpl {
     buildCommand.commandDesc = 'Build Docker containers based on JSON spec';
     //noinspection ReservedWordAsName
     buildCommand.options = {
-      verbose: {
-        alias: 'v',
-        default: false,
-        type: 'boolean',
-        desc: 'Name the config JSON file'
-      },
       input: {
         alias: 'i',
         default: MakeCommand.defaultConfigFilename,
@@ -223,113 +218,130 @@ export class MakeCommand extends CommandImpl {
               (expressApp:ExpressApp, cb:(err:Error, result:any)=>void)=> {
                 //noinspection JSUnusedLocalSymbols
                 async.series([
-                    (cb:(err:Error, result:any)=>void)=> {//Clone Express app Git Repo
-                      let cwd = process.cwd();
-                      expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
-                      cb(null, expressApp.GitCloneFolder);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Clone Express app Git Repo
-                      self.gitClone(expressApp.GitUrl,
-                        expressApp.GitSrcBranchName,
-                        expressApp.GitCloneFolder, (err:Error)=> {
-                          self.logError(err);
-                          cb(err, null);
-                        });
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Make sure there's a Strongloop PM listening
-                      let retries:number = 3;
-                      var timer = setInterval(function checkForStrongloop() {
-                        self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [],
-                          (err:Error)=> {
-                            if (!err) {
-                              retries = -1;
-                            } else {
-                              console.log(err.message);
-                            }
-                            if (--retries < 0) {
-                              clearInterval(timer);
-                              cb(err, null);
-                            }
-                          });
-                      }, 3000);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
-                      let serviceName = expressApp.ServiceName;
-                      self.remoteSlcCtlCommand('Creating ' + serviceName, expressApp, ['create', serviceName], cb);
-                    },
-                    (cb:(err:Error, result?:any)=>void)=> {//Perform Bower install if required
-                      if (!expressApp.DoBowerInstall) {
-                        cb(null);
-                        return;
+                  (cb:(err:Error, result?:any)=>void)=> {//Figure out git clone folder name and check 'DeployExisting'
+                    let cwd = process.cwd();
+                    let serviceName = expressApp.ServiceName;
+                    if (expressApp.DeployExisting) {
+                      let serviceSourceFolders = fs.readdirSync(cwd).filter((fileName)=> {
+                        return fileName.substring(0, serviceName.length) === serviceName;
+                      });
+                      if (serviceSourceFolders.length > 1) {
+                        let msg = 'DeployExisting was specified but there is more than one service named: ';
+                        msg += serviceName + ': ' + serviceSourceFolders + '. Delete all but one and retry.';
+                        cb(new Error(msg));
+                      } else if (serviceSourceFolders.length > 0) {
+                        expressApp.GitCloneFolder = cwd + '/' + serviceSourceFolders[0];
+                      } else {
+                        expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
                       }
-                      let cwd = expressApp.GitCloneFolder;
-                      self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {cwd, stdio: null}, cb);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {
-                      //Perform NPM install --ignore-scripts in case any scripts require node_modules
-                      let cwd = expressApp.GitCloneFolder;
-                      self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], {cwd, stdio: null}, cb);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Execute local scripts
-                      //noinspection JSUnusedLocalSymbols
-                      async.mapSeries(expressApp.Scripts || [],
-                        (script, cb:(err:Error, result:any)=>void)=> {
-                          let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
-                          let cmd = [script.Command];
-                          cmd = cmd.concat(script.Args);
-                          self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
-                        },
-                        (err:Error, results:any)=> {
-                          cb(err, null);
-                        });
-                    },
-                    (cb:(err:Error, result?:any)=>void)=> {//Set ClusterSize
-                      if (!expressApp.ClusterSize) {
-                        cb(null);
-                        return;
-                      }
-                      let clusterSize = expressApp.ClusterSize.toString();
-                      self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize,
-                        expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
-                    },
-                    (cb:(err:Error, result?:any)=>void)=> {//Set ExpressApp environment
-                      expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
-                      let cmd = ['env-set', expressApp.ServiceName];
-                      for (let environmentVariable in expressApp.EnvironmentVariables) {
-                        cmd.push(environmentVariable
-                          + '='
-                          + expressApp.EnvironmentVariables[environmentVariable]);
-                      }
-                      self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//Perform Strongloop build ...
-                      let cwd = expressApp.GitCloneFolder;
-                      self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
-                    },
-                    (cb:(err:Error, result:any)=>void)=> {//... and Strongloop deploy
-                      let cwd = expressApp.GitCloneFolder;
-                      console.log('StrongLoop Deploying @ ' + cwd);
-                      self.spawnShellCommand(['slc', 'deploy', '--service=' + expressApp.ServiceName,
-                        expressApp.StrongLoopServerUrl], {
-                        cwd,
-                        stdio: null
-                      }, cb);
                     }
-                  ],
-                  (err:Error, results:any)=> {
-                    cb(null, null);
-                  });
-              },
-              (err:Error, results:any)=> {
-                cb(null, null);
-              });
-          },
-          (err:Error, results:any)=> {
-            cb(null, null);
-          });
+                    cb(null);
+                  },
+                  (cb:(err:Error, result?:any)=>void)=> {//Clone Express app Git Repo
+                    //noinspection JSUnusedLocalSymbols
+                    //Check for existence of GitCloneFolder ...
+                    fs.stat(expressApp.GitCloneFolder, (err, stats)=> {
+                      if (err) {
+                        if (err.errno === 34) {
+                          //Directory does not exist, clone it
+                          self.gitClone(expressApp.GitUrl,
+                            expressApp.GitSrcBranchName,
+                            expressApp.GitCloneFolder, (err:Error)=> {
+                              cb(err);
+                            });
+                        } else {
+                          cb(err);
+                        }
+                      } else {
+                        cb(null);
+                      }
+                    });
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {//Make sure there's a Strongloop PM listening
+                    let retries:number = 3;
+                    var timer = setInterval(function checkForStrongloop() {
+                      self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [],
+                        (err:Error)=> {
+                          if (!err) {
+                            retries = -1;
+                          } else {
+                            console.log(err.message);
+                          }
+                          if (--retries < 0) {
+                            clearInterval(timer);
+                            cb(err, null);
+                          }
+                        });
+                    }, 3000);
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
+                    let serviceName = expressApp.ServiceName;
+                    self.remoteSlcCtlCommand('Creating ' + serviceName, expressApp, ['create', serviceName], cb);
+                  },
+                  (cb:(err:Error, result?:any)=>void)=> {//Perform Bower install if required
+                    if (!expressApp.DoBowerInstall) {
+                      cb(null);
+                      return;
+                    }
+                    let cwd = expressApp.GitCloneFolder;
+                    self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {cwd, stdio: null}, cb);
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {
+                    //Perform NPM install --ignore-scripts in case any scripts require node_modules
+                    let cwd = expressApp.GitCloneFolder;
+                    self.spawnShellCommand(['npm', 'install', '--ignore-scripts'], {cwd, stdio: null}, cb);
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {//Execute local scripts
+                    //noinspection JSUnusedLocalSymbols
+                    async.mapSeries(expressApp.Scripts || [],
+                      (script, cb:(err:Error, result:any)=>void)=> {
+                        let cwd = expressApp.GitCloneFolder + '/' + script.RelativeWorkingDir;
+                        let cmd = [script.Command];
+                        cmd = cmd.concat(script.Args);
+                        self.spawnShellCommand(cmd, {cwd, stdio: null}, cb);
+                      },
+                      (err:Error, results:any)=> {
+                        cb(err, null);
+                      });
+                  },
+                  (cb:(err:Error, result?:any)=>void)=> {//Set ClusterSize
+                    if (!expressApp.ClusterSize) {
+                      cb(null);
+                      return;
+                    }
+                    let clusterSize = expressApp.ClusterSize.toString();
+                    self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize,
+                      expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
+                  },
+                  (cb:(err:Error, result?:any)=>void)=> {//Set ExpressApp environment
+                    expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
+                    let cmd = ['env-set', expressApp.ServiceName];
+                    for (let environmentVariable in expressApp.EnvironmentVariables) {
+                      cmd.push(environmentVariable
+                        + '='
+                        + expressApp.EnvironmentVariables[environmentVariable]);
+                    }
+                    self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {//Perform Strongloop build ...
+                    let cwd = expressApp.GitCloneFolder;
+                    self.spawnShellCommand(['slc', 'build'], {cwd, stdio: null}, cb);
+                  },
+                  (cb:(err:Error, result:any)=>void)=> {//... and Strongloop deploy
+                    let cwd = expressApp.GitCloneFolder;
+                    console.log('StrongLoop Deploying @ ' + cwd);
+                    self.spawnShellCommand(['slc', 'deploy', '--service=' + expressApp.ServiceName,
+                      expressApp.StrongLoopServerUrl], {
+                      cwd,
+                      stdio: null
+                    }, cb);
+                  }
+                ], cb);
+              }, cb);
+          }, cb);
       }
     ], (err:Error, results:string)=> {
-      self.processExit();
+      self.processExitWithError(err);
     });
   }
 
