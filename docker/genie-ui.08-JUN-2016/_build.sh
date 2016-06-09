@@ -1,3 +1,3 @@
 #!/bin/bash
-docker build --rm -t jreeme/genie-ui:08-JUN-2016 .
+docker build --rm -t jreeme/genie-ui:09-JUN-2016 .
 

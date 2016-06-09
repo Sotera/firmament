@@ -47,7 +47,7 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         me.sudoSpawn(['apt-get', 'update'], cb);
       }
       , function (cb:(err?:Error)=>void) {
-        me.spawnShellCommandAsync(['uname', '-r'], (err, result)=> {
+        me.spawnShellCommandAsync(['uname', '-r'], null, (err, result)=> {
           var uname = result.replace('\n', '');
           me.sudoSpawn(['apt-get', 'install', '-y', 'linux-image-extra-' + uname], cb);
         });
@@ -83,7 +83,7 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
         me.sudoSpawn(['service', 'docker', 'start'], cb);
       }
       , function (cb:(err?:Error)=>void) {
-        me.spawnShellCommandAsync(['whoami'], (err, result)=> {
+        me.spawnShellCommandAsync(['whoami'], null, (err, result)=> {
           var whoami = result.replace('\n', '');
           me.sudoSpawn(['usermod', '-aG', 'docker', whoami], cb);
         });

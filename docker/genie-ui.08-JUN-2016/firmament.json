@@ -1,7 +1,7 @@
 [
   {
     "name": "genie-strongloop",
-    "Image": "jreeme/genie-ui:08-JUN-2016",
+    "Image": "jreeme/genie-ui:09-JUN-2016",
     "DockerFilePath": "",
     "Hostname": "genie-strongloop",
     "ExposedPorts": {

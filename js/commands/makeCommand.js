@@ -9,6 +9,7 @@ var firmament_docker_1 = require("firmament-docker");
 var log = require('jsnlog').JL();
 var async = require('async');
 var fs = require('fs');
+var childProcess = require('child_process');
 var positive = require('positive');
 var _ = require('lodash');
 var MakeCommand = (function (_super) {
@@ -205,27 +206,23 @@ var MakeCommand = (function (_super) {
                                         var msg = 'DeployExisting was specified but there is more than one service named: ';
                                         msg += serviceName + ': ' + serviceSourceFolders + '. Delete all but one and retry.';
                                         cb(new Error(msg));
+                                        return;
                                     }
                                     else if (serviceSourceFolders.length > 0) {
                                         expressApp.GitCloneFolder = cwd + '/' + serviceSourceFolders[0];
-                                    }
-                                    else {
-                                        expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
+                                        cb(null);
+                                        return;
                                     }
                                 }
+                                expressApp.GitCloneFolder = cwd + '/' + expressApp.ServiceName + (new Date()).getTime();
                                 cb(null);
                             },
                             function (cb) {
                                 fs.stat(expressApp.GitCloneFolder, function (err, stats) {
                                     if (err) {
-                                        if (err.errno === 34) {
-                                            self.gitClone(expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder, function (err) {
-                                                cb(err);
-                                            });
-                                        }
-                                        else {
+                                        self.gitClone(expressApp.GitUrl, expressApp.GitSrcBranchName, expressApp.GitCloneFolder, function (err) {
                                             cb(err);
-                                        }
+                                        });
                                     }
                                     else {
                                         cb(null);
@@ -251,7 +248,26 @@ var MakeCommand = (function (_super) {
                             },
                             function (cb) {
                                 var serviceName = expressApp.ServiceName;
-                                self.remoteSlcCtlCommand('Creating ' + serviceName, expressApp, ['create', serviceName], cb);
+                                var msg = 'Creating ' + serviceName;
+                                self.remoteSlcCtlCommand(msg, expressApp, ['create', serviceName], cb);
+                            },
+                            function (cb) {
+                                if (!expressApp.ClusterSize) {
+                                    cb(null);
+                                    return;
+                                }
+                                var clusterSize = expressApp.ClusterSize.toString();
+                                self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize, expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
+                            },
+                            function (cb) {
+                                expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
+                                var cmd = ['env-set', expressApp.ServiceName];
+                                for (var environmentVariable in expressApp.EnvironmentVariables) {
+                                    cmd.push(environmentVariable
+                                        + '='
+                                        + expressApp.EnvironmentVariables[environmentVariable]);
+                                }
+                                self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
                             },
                             function (cb) {
                                 if (!expressApp.DoBowerInstall) {
@@ -276,26 +292,8 @@ var MakeCommand = (function (_super) {
                                 });
                             },
                             function (cb) {
-                                if (!expressApp.ClusterSize) {
-                                    cb(null);
-                                    return;
-                                }
-                                var clusterSize = expressApp.ClusterSize.toString();
-                                self.remoteSlcCtlCommand('Setting cluster size to: ' + clusterSize, expressApp, ['set-size', expressApp.ServiceName, clusterSize], cb);
-                            },
-                            function (cb) {
-                                expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
-                                var cmd = ['env-set', expressApp.ServiceName];
-                                for (var environmentVariable in expressApp.EnvironmentVariables) {
-                                    cmd.push(environmentVariable
-                                        + '='
-                                        + expressApp.EnvironmentVariables[environmentVariable]);
-                                }
-                                self.remoteSlcCtlCommand('Setting environment variables', expressApp, cmd, cb);
-                            },
-                            function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
-                                self.spawnShellCommand(['slc', 'build'], { cwd: cwd, stdio: null }, cb);
+                                self.spawnShellCommand(['slc', 'build', '--scripts'], { cwd: cwd, stdio: null }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
@@ -330,7 +328,10 @@ var MakeCommand = (function (_super) {
         console.log(msg + ' "' + serviceName + '" @ "' + cwd + '" via "' + serverUrl + '"');
         var baseCmd = ['slc', 'ctl', '-C', serverUrl];
         Array.prototype.push.apply(baseCmd, cmd);
-        this.spawnShellCommand(baseCmd, { cwd: cwd, stdio: null }, cb);
+        this.spawnShellCommandAsync(baseCmd, { cwd: cwd, stdio: 'pipe' }, function (err, result) {
+            console.log(result);
+            cb(err, result);
+        });
     };
     MakeCommand.prototype.containerDependencySort = function (containerConfigs) {
         var sortedContainerConfigs = [];

@@ -50,7 +50,7 @@ var PrepLinuxImpl = (function (_super) {
                 me.sudoSpawn(['apt-get', 'update'], cb);
             },
             function (cb) {
-                me.spawnShellCommandAsync(['uname', '-r'], function (err, result) {
+                me.spawnShellCommandAsync(['uname', '-r'], null, function (err, result) {
                     var uname = result.replace('\n', '');
                     me.sudoSpawn(['apt-get', 'install', '-y', 'linux-image-extra-' + uname], cb);
                 });
@@ -86,7 +86,7 @@ var PrepLinuxImpl = (function (_super) {
                 me.sudoSpawn(['service', 'docker', 'start'], cb);
             },
             function (cb) {
-                me.spawnShellCommandAsync(['whoami'], function (err, result) {
+                me.spawnShellCommandAsync(['whoami'], null, function (err, result) {
                     var whoami = result.replace('\n', '');
                     me.sudoSpawn(['usermod', '-aG', 'docker', whoami], cb);
                 });
