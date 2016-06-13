@@ -36,6 +36,7 @@
         "StrongLoopServerUrl": "http://localhost:8701",
         "ServiceName": "GenieUI",
         "DoBowerInstall": true,
+        "ClusterSize": 1,
         "EnvironmentVariables": {
           "RUN_AS_NODERED": 0,
           "PORT": 8080,
