@@ -1,0 +1,10 @@
+[
+  {
+    "name": "genie-ui",
+    "url": "https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/genie-ui.08-JUN-2016/firmament.json"
+  },
+  {
+    "name": "datawake",
+    "url": "https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/genie-ui.08-JUN-2016/firmament.json"
+  }
+]

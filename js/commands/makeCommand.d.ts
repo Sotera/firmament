@@ -12,7 +12,7 @@ export declare class MakeCommand extends CommandImpl {
     private makeTemplate(argv);
     private static getJsonConfigFilePath(filename);
     private processContainerConfigs(containerConfigs);
-    private static writeJsonTemplateFile(fullOutputPath, writeFullTemplate);
+    private static writeJsonTemplateFile(objectToWrite, fullOutputPath);
     private remoteSlcCtlCommand(msg, expressApp, cmd, cb);
     private containerDependencySort(containerConfigs);
     private topologicalDependencySort(graph);

@@ -1,6 +1,6 @@
 {
   "name": "firmament",
-  "version": "0.0.26",
+  "version": "0.0.33",
   "description": "Docker management script",
   "main": "js/firmament.js",
   "preferGlobal": true,
@@ -33,6 +33,7 @@
     "jsonfile": "^2.2.3",
     "lodash": "^4.8.2",
     "positive": "^1.0.9",
+    "request": "^2.72.0",
     "time-ago": "^0.1.0"
   }
 }

@@ -5,8 +5,8 @@ import {
 } from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
+const request = require('request');
 const fs = require('fs');
-const childProcess = require('child_process');
 const positive = require('positive');
 import * as _ from 'lodash';
 interface ErrorEx extends Error {
@@ -38,6 +38,14 @@ export class MakeCommand extends CommandImpl {
     templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
     //noinspection ReservedWordAsName
     templateCommand.options = {
+      get: {
+        type: 'string',
+        desc: 'Get a container cluster template from GitHub (use -ls to list available templates)'
+      },
+      ls: {
+        type: 'string',
+        desc: 'List available Docker container cluster templates'
+      },
       output: {
         alias: 'o',
         default: MakeCommand.defaultConfigFilename,
@@ -82,16 +90,114 @@ export class MakeCommand extends CommandImpl {
 
   private makeTemplate(argv:any) {
     let fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
-    var fs = require('fs');
-    if (fs.existsSync(fullOutputPath)) {
-      if (positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
-        MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
-      } else {
-        console.log('Canceling JSON template creation!');
-      }
-    } else {
-      MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
+    let objectToWrite:any = argv.full
+      ? DockerDescriptors.dockerContainerDefaultTemplate
+      : DockerDescriptors.dockerContainerConfigTemplate;
+    if(argv.ls){
+      //request.get()
     }
+    switch (argv.library) {
+      case 'genie-ui':
+        objectToWrite =
+          [
+            {
+              "name": "genie-strongloop",
+              "Image": "jreeme/genie-ui:09-JUN-2016",
+              "DockerFilePath": "",
+              "Hostname": "genie-strongloop",
+              "ExposedPorts": {
+                "8080/tcp": {},
+                "8888/tcp": {}
+              },
+              "HostConfig": {
+                "PortBindings": {
+                  "8888/tcp": [
+                    {
+                      "HostPort": "8888"
+                    }
+                  ],
+                  "8080/tcp": [
+                    {
+                      "HostPort": "8080"
+                    }
+                  ],
+                  "8701/tcp": [
+                    {
+                      "HostPort": "8701"
+                    }
+                  ]
+                }
+              },
+              "ExpressApps": [
+                {
+                  "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                  "DeployExisting": true,
+                  "GitSrcBranchName": "master",
+                  "StrongLoopBranchName": "deploy",
+                  "StrongLoopServerUrl": "http://localhost:8701",
+                  "ServiceName": "GenieUI",
+                  "DoBowerInstall": true,
+                  "EnvironmentVariables": {
+                    "RUN_AS_NODERED": 0,
+                    "PORT": 8080,
+                    "USE_NODERED_CLUSTERING": 0,
+                    "NODE_ENV": "production",
+                    "GEOCODER_API_KEY": "<ONDEPLOY>",
+                    "GEOCODER_ENDPOINT": "<ONDEPLOY>"
+                  },
+                  "Scripts": [
+                    {
+                      "RelativeWorkingDir": ".",
+                      "Command": "cp",
+                      "Args": [
+                        "server/config.json.template",
+                        "server/config.json"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                  "DeployExisting": true,
+                  "GitSrcBranchName": "master",
+                  "StrongLoopBranchName": "deploy",
+                  "StrongLoopServerUrl": "http://localhost:8701",
+                  "ServiceName": "NodeRed",
+                  "ClusterSize": 1,
+                  "EnvironmentVariables": {
+                    "PORT": 8888,
+                    "RUN_AS_NODERED": 1,
+                    "USE_NODERED_CLUSTERING": 0,
+                    "GENIE_HOST": "http://genie-strongloop:8080",
+                    "NODE_ENV": "production"
+                  },
+                  "Scripts": [
+                    {
+                      "RelativeWorkingDir": ".",
+                      "Command": "cp",
+                      "Args": [
+                        "server/config.json.template",
+                        "server/config.json"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ];
+        break;
+      default:
+        console.log("Can't find library: '" + argv.library + "'");
+        this.processExit();
+        break;
+    }
+    var fs = require('fs');
+    if (fs.existsSync(fullOutputPath)
+      && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
+      console.log('Canceling JSON template creation!');
+      this.processExit();
+    }
+    MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
     this.processExit();
   }
 
@@ -258,20 +364,24 @@ export class MakeCommand extends CommandImpl {
                   },
                   (cb:(err:Error, result:any)=>void)=> {//Make sure there's a Strongloop PM listening
                     let retries:number = 3;
-                    var timer = setInterval(function checkForStrongloop() {
-                      self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [],
-                        (err:Error)=> {
-                          if (!err) {
-                            retries = -1;
-                          } else {
-                            console.log(err.message);
-                          }
-                          if (--retries < 0) {
-                            clearInterval(timer);
-                            cb(err, null);
+                    (function checkForStrongloop() {
+                      self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, ['info'],
+                        (err:Error, result:string)=> {
+                          --retries;
+                          const errorMsg = 'Strongloop not available';
+                          const readyResult = /Driver Status:\s+running/;
+                          if (err) {
+                            cb(new Error(err.message), errorMsg);
+                            setTimeout(checkForStrongloop, 3000);
+                          } else if (readyResult.test(result)) {
+                            cb(null, 'Strongloop ready.');
+                          } else if (retries < 0) {
+                            cb(new Error(errorMsg), errorMsg);
+                          }else{
+                            setTimeout(checkForStrongloop, 3000);
                           }
                         });
-                    }, 3000);
+                    })();
                   },
                   (cb:(err:Error, result:any)=>void)=> {//Create Strongloop app
                     let serviceName = expressApp.ServiceName;
@@ -303,7 +413,10 @@ export class MakeCommand extends CommandImpl {
                       return;
                     }
                     let cwd = expressApp.GitCloneFolder;
-                    self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {cwd, stdio: null}, cb);
+                    self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {
+                      cwd,
+                      stdio: null
+                    }, cb);
                   },
                   (cb:(err:Error, result:any)=>void)=> {
                     //Perform NPM install --ignore-scripts in case any scripts require node_modules
@@ -345,17 +458,14 @@ export class MakeCommand extends CommandImpl {
     });
   }
 
-  private static writeJsonTemplateFile(fullOutputPath:string, writeFullTemplate:boolean) {
+  private static writeJsonTemplateFile(objectToWrite:any, fullOutputPath:string) {
     console.log("Writing JSON template file '" + fullOutputPath + "' ...");
-    let objectToWrite = writeFullTemplate
-      ? DockerDescriptors.dockerContainerDefaultTemplate
-      : DockerDescriptors.dockerContainerConfigTemplate;
     var jsonFile = require('jsonfile');
     jsonFile.spaces = 2;
     jsonFile.writeFileSync(fullOutputPath, objectToWrite);
   }
 
-  private remoteSlcCtlCommand(msg:string, expressApp:ExpressApp, cmd:string[], cb:(err:Error, result?:any)=>void) {
+  private remoteSlcCtlCommand(msg:string, expressApp:ExpressApp, cmd:string[], cb:(err:Error, result:string)=>void) {
     let cwd = expressApp.GitCloneFolder;
     let serviceName = expressApp.ServiceName;
     let serverUrl = expressApp.StrongLoopServerUrl;
@@ -426,7 +536,7 @@ export class MakeCommand extends CommandImpl {
 
   private gitClone(gitUrl:string, gitBranch:string, localFolder:string, cb:(err:Error, child:any)=>void) {
     this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder],
-      {cwd: process.cwd()}, cb);
+      {cwd: process.cwd(), stdio: 'pipe'}, cb);
   }
 }
 

@@ -8,8 +8,8 @@ var firmament_yargs_1 = require('firmament-yargs');
 var firmament_docker_1 = require("firmament-docker");
 var log = require('jsnlog').JL();
 var async = require('async');
+var request = require('request');
 var fs = require('fs');
-var childProcess = require('child_process');
 var positive = require('positive');
 var _ = require('lodash');
 var MakeCommand = (function (_super) {
@@ -33,6 +33,14 @@ var MakeCommand = (function (_super) {
         templateCommand.aliases = ['template', 't'];
         templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
         templateCommand.options = {
+            get: {
+                type: 'string',
+                desc: 'Get a container cluster template from GitHub (use -ls to list available templates)'
+            },
+            ls: {
+                type: 'string',
+                desc: 'List available Docker container cluster templates'
+            },
             output: {
                 alias: 'o',
                 default: MakeCommand.defaultConfigFilename,
@@ -76,18 +84,113 @@ var MakeCommand = (function (_super) {
     };
     MakeCommand.prototype.makeTemplate = function (argv) {
         var fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
+        var objectToWrite = argv.full
+            ? firmament_docker_1.DockerDescriptors.dockerContainerDefaultTemplate
+            : firmament_docker_1.DockerDescriptors.dockerContainerConfigTemplate;
+        if (argv.ls) {
+        }
+        switch (argv.library) {
+            case 'genie-ui':
+                objectToWrite =
+                    [
+                        {
+                            "name": "genie-strongloop",
+                            "Image": "jreeme/genie-ui:09-JUN-2016",
+                            "DockerFilePath": "",
+                            "Hostname": "genie-strongloop",
+                            "ExposedPorts": {
+                                "8080/tcp": {},
+                                "8888/tcp": {}
+                            },
+                            "HostConfig": {
+                                "PortBindings": {
+                                    "8888/tcp": [
+                                        {
+                                            "HostPort": "8888"
+                                        }
+                                    ],
+                                    "8080/tcp": [
+                                        {
+                                            "HostPort": "8080"
+                                        }
+                                    ],
+                                    "8701/tcp": [
+                                        {
+                                            "HostPort": "8701"
+                                        }
+                                    ]
+                                }
+                            },
+                            "ExpressApps": [
+                                {
+                                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                                    "DeployExisting": true,
+                                    "GitSrcBranchName": "master",
+                                    "StrongLoopBranchName": "deploy",
+                                    "StrongLoopServerUrl": "http://localhost:8701",
+                                    "ServiceName": "GenieUI",
+                                    "DoBowerInstall": true,
+                                    "EnvironmentVariables": {
+                                        "RUN_AS_NODERED": 0,
+                                        "PORT": 8080,
+                                        "USE_NODERED_CLUSTERING": 0,
+                                        "NODE_ENV": "production",
+                                        "GEOCODER_API_KEY": "<ONDEPLOY>",
+                                        "GEOCODER_ENDPOINT": "<ONDEPLOY>"
+                                    },
+                                    "Scripts": [
+                                        {
+                                            "RelativeWorkingDir": ".",
+                                            "Command": "cp",
+                                            "Args": [
+                                                "server/config.json.template",
+                                                "server/config.json"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                                    "DeployExisting": true,
+                                    "GitSrcBranchName": "master",
+                                    "StrongLoopBranchName": "deploy",
+                                    "StrongLoopServerUrl": "http://localhost:8701",
+                                    "ServiceName": "NodeRed",
+                                    "ClusterSize": 1,
+                                    "EnvironmentVariables": {
+                                        "PORT": 8888,
+                                        "RUN_AS_NODERED": 1,
+                                        "USE_NODERED_CLUSTERING": 0,
+                                        "GENIE_HOST": "http://genie-strongloop:8080",
+                                        "NODE_ENV": "production"
+                                    },
+                                    "Scripts": [
+                                        {
+                                            "RelativeWorkingDir": ".",
+                                            "Command": "cp",
+                                            "Args": [
+                                                "server/config.json.template",
+                                                "server/config.json"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ];
+                break;
+            default:
+                console.log("Can't find library: '" + argv.library + "'");
+                this.processExit();
+                break;
+        }
         var fs = require('fs');
-        if (fs.existsSync(fullOutputPath)) {
-            if (positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
-                MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
-            }
-            else {
-                console.log('Canceling JSON template creation!');
-            }
+        if (fs.existsSync(fullOutputPath)
+            && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
+            console.log('Canceling JSON template creation!');
+            this.processExit();
         }
-        else {
-            MakeCommand.writeJsonTemplateFile(fullOutputPath, argv.full);
-        }
+        MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
         this.processExit();
     };
     MakeCommand.getJsonConfigFilePath = function (filename) {
@@ -231,20 +334,26 @@ var MakeCommand = (function (_super) {
                             },
                             function (cb) {
                                 var retries = 3;
-                                var timer = setInterval(function checkForStrongloop() {
-                                    self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, [], function (err) {
-                                        if (!err) {
-                                            retries = -1;
+                                (function checkForStrongloop() {
+                                    self.remoteSlcCtlCommand('Looking for SLC PM ...', expressApp, ['info'], function (err, result) {
+                                        --retries;
+                                        var errorMsg = 'Strongloop not available';
+                                        var readyResult = /Driver Status:\s+running/;
+                                        if (err) {
+                                            cb(new Error(err.message), errorMsg);
+                                            setTimeout(checkForStrongloop, 3000);
+                                        }
+                                        else if (readyResult.test(result)) {
+                                            cb(null, 'Strongloop ready.');
+                                        }
+                                        else if (retries < 0) {
+                                            cb(new Error(errorMsg), errorMsg);
                                         }
                                         else {
-                                            console.log(err.message);
-                                        }
-                                        if (--retries < 0) {
-                                            clearInterval(timer);
-                                            cb(err, null);
+                                            setTimeout(checkForStrongloop, 3000);
                                         }
                                     });
-                                }, 3000);
+                                })();
                             },
                             function (cb) {
                                 var serviceName = expressApp.ServiceName;
@@ -275,7 +384,10 @@ var MakeCommand = (function (_super) {
                                     return;
                                 }
                                 var cwd = expressApp.GitCloneFolder;
-                                self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], { cwd: cwd, stdio: null }, cb);
+                                self.spawnShellCommand(['bower', 'install', '--config.interactive=false'], {
+                                    cwd: cwd,
+                                    stdio: null
+                                }, cb);
                             },
                             function (cb) {
                                 var cwd = expressApp.GitCloneFolder;
@@ -312,11 +424,8 @@ var MakeCommand = (function (_super) {
             self.processExitWithError(err);
         });
     };
-    MakeCommand.writeJsonTemplateFile = function (fullOutputPath, writeFullTemplate) {
+    MakeCommand.writeJsonTemplateFile = function (objectToWrite, fullOutputPath) {
         console.log("Writing JSON template file '" + fullOutputPath + "' ...");
-        var objectToWrite = writeFullTemplate
-            ? firmament_docker_1.DockerDescriptors.dockerContainerDefaultTemplate
-            : firmament_docker_1.DockerDescriptors.dockerContainerConfigTemplate;
         var jsonFile = require('jsonfile');
         jsonFile.spaces = 2;
         jsonFile.writeFileSync(fullOutputPath, objectToWrite);
@@ -385,7 +494,7 @@ var MakeCommand = (function (_super) {
         return sorted;
     };
     MakeCommand.prototype.gitClone = function (gitUrl, gitBranch, localFolder, cb) {
-        this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], { cwd: process.cwd() }, cb);
+        this.spawnShellCommand(['git', 'clone', '-b', gitBranch, '--single-branch', gitUrl, localFolder], { cwd: process.cwd(), stdio: 'pipe' }, cb);
     };
     MakeCommand.defaultConfigFilename = 'firmament.json';
     MakeCommand.jsonFileExtension = '.json';
