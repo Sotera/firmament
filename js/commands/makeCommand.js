@@ -34,11 +34,13 @@ var MakeCommand = (function (_super) {
         templateCommand.commandDesc = 'Create a template JSON spec for a container cluster';
         templateCommand.options = {
             get: {
+                alias: 'g',
                 type: 'string',
                 desc: 'Get a container cluster template from GitHub (use -ls to list available templates)'
             },
             ls: {
-                type: 'string',
+                type: 'boolean',
+                default: false,
                 desc: 'List available Docker container cluster templates'
             },
             output: {
@@ -49,7 +51,7 @@ var MakeCommand = (function (_super) {
             },
             full: {
                 alias: 'f',
-                boolean: true,
+                type: 'boolean',
                 default: false,
                 desc: 'Create a full JSON template with all Docker options set to reasonable defaults'
             }
@@ -83,115 +85,132 @@ var MakeCommand = (function (_super) {
         this.processContainerConfigs(containerDescriptors);
     };
     MakeCommand.prototype.makeTemplate = function (argv) {
+        var _this = this;
         var fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
         var objectToWrite = argv.full
             ? firmament_docker_1.DockerDescriptors.dockerContainerDefaultTemplate
             : firmament_docker_1.DockerDescriptors.dockerContainerConfigTemplate;
         if (argv.ls) {
+            var templateCatalogUrl = 'https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/templateCatalog.json';
+            request(templateCatalogUrl, function (err, res, body) {
+                try {
+                    var templateCatalog = JSON.parse(body);
+                    console.log('\nAvailable templates:\n');
+                    templateCatalog.forEach(function (template) {
+                        console.log('> ' + template.name);
+                    });
+                }
+                catch (e) {
+                    console.log('\nError getting template catalog.\n');
+                }
+                _this.processExit();
+            });
         }
-        switch (argv.library) {
-            case 'genie-ui':
-                objectToWrite =
-                    [
-                        {
-                            "name": "genie-strongloop",
-                            "Image": "jreeme/genie-ui:09-JUN-2016",
-                            "DockerFilePath": "",
-                            "Hostname": "genie-strongloop",
-                            "ExposedPorts": {
-                                "8080/tcp": {},
-                                "8888/tcp": {}
-                            },
-                            "HostConfig": {
-                                "PortBindings": {
-                                    "8888/tcp": [
-                                        {
-                                            "HostPort": "8888"
-                                        }
-                                    ],
-                                    "8080/tcp": [
-                                        {
-                                            "HostPort": "8080"
-                                        }
-                                    ],
-                                    "8701/tcp": [
-                                        {
-                                            "HostPort": "8701"
-                                        }
-                                    ]
-                                }
-                            },
-                            "ExpressApps": [
-                                {
-                                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                                    "DeployExisting": true,
-                                    "GitSrcBranchName": "master",
-                                    "StrongLoopBranchName": "deploy",
-                                    "StrongLoopServerUrl": "http://localhost:8701",
-                                    "ServiceName": "GenieUI",
-                                    "DoBowerInstall": true,
-                                    "EnvironmentVariables": {
-                                        "RUN_AS_NODERED": 0,
-                                        "PORT": 8080,
-                                        "USE_NODERED_CLUSTERING": 0,
-                                        "NODE_ENV": "production",
-                                        "GEOCODER_API_KEY": "<ONDEPLOY>",
-                                        "GEOCODER_ENDPOINT": "<ONDEPLOY>"
-                                    },
-                                    "Scripts": [
-                                        {
-                                            "RelativeWorkingDir": ".",
-                                            "Command": "cp",
-                                            "Args": [
-                                                "server/config.json.template",
-                                                "server/config.json"
-                                            ]
-                                        }
-                                    ]
+        else {
+            switch (argv.library) {
+                case 'genie-ui':
+                    objectToWrite =
+                        [
+                            {
+                                "name": "genie-strongloop",
+                                "Image": "jreeme/genie-ui:09-JUN-2016",
+                                "DockerFilePath": "",
+                                "Hostname": "genie-strongloop",
+                                "ExposedPorts": {
+                                    "8080/tcp": {},
+                                    "8888/tcp": {}
                                 },
-                                {
-                                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                                    "DeployExisting": true,
-                                    "GitSrcBranchName": "master",
-                                    "StrongLoopBranchName": "deploy",
-                                    "StrongLoopServerUrl": "http://localhost:8701",
-                                    "ServiceName": "NodeRed",
-                                    "ClusterSize": 1,
-                                    "EnvironmentVariables": {
-                                        "PORT": 8888,
-                                        "RUN_AS_NODERED": 1,
-                                        "USE_NODERED_CLUSTERING": 0,
-                                        "GENIE_HOST": "http://genie-strongloop:8080",
-                                        "NODE_ENV": "production"
+                                "HostConfig": {
+                                    "PortBindings": {
+                                        "8888/tcp": [
+                                            {
+                                                "HostPort": "8888"
+                                            }
+                                        ],
+                                        "8080/tcp": [
+                                            {
+                                                "HostPort": "8080"
+                                            }
+                                        ],
+                                        "8701/tcp": [
+                                            {
+                                                "HostPort": "8701"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "ExpressApps": [
+                                    {
+                                        "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                                        "DeployExisting": true,
+                                        "GitSrcBranchName": "master",
+                                        "StrongLoopBranchName": "deploy",
+                                        "StrongLoopServerUrl": "http://localhost:8701",
+                                        "ServiceName": "GenieUI",
+                                        "DoBowerInstall": true,
+                                        "EnvironmentVariables": {
+                                            "RUN_AS_NODERED": 0,
+                                            "PORT": 8080,
+                                            "USE_NODERED_CLUSTERING": 0,
+                                            "NODE_ENV": "production",
+                                            "GEOCODER_API_KEY": "<ONDEPLOY>",
+                                            "GEOCODER_ENDPOINT": "<ONDEPLOY>"
+                                        },
+                                        "Scripts": [
+                                            {
+                                                "RelativeWorkingDir": ".",
+                                                "Command": "cp",
+                                                "Args": [
+                                                    "server/config.json.template",
+                                                    "server/config.json"
+                                                ]
+                                            }
+                                        ]
                                     },
-                                    "Scripts": [
-                                        {
-                                            "RelativeWorkingDir": ".",
-                                            "Command": "cp",
-                                            "Args": [
-                                                "server/config.json.template",
-                                                "server/config.json"
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ];
-                break;
-            default:
-                console.log("Can't find library: '" + argv.library + "'");
+                                    {
+                                        "GitUrl": "https://github.com/Sotera/genie-ui.git",
+                                        "DeployExisting": true,
+                                        "GitSrcBranchName": "master",
+                                        "StrongLoopBranchName": "deploy",
+                                        "StrongLoopServerUrl": "http://localhost:8701",
+                                        "ServiceName": "NodeRed",
+                                        "ClusterSize": 1,
+                                        "EnvironmentVariables": {
+                                            "PORT": 8888,
+                                            "RUN_AS_NODERED": 1,
+                                            "USE_NODERED_CLUSTERING": 0,
+                                            "GENIE_HOST": "http://genie-strongloop:8080",
+                                            "NODE_ENV": "production"
+                                        },
+                                        "Scripts": [
+                                            {
+                                                "RelativeWorkingDir": ".",
+                                                "Command": "cp",
+                                                "Args": [
+                                                    "server/config.json.template",
+                                                    "server/config.json"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ];
+                    break;
+                default:
+                    console.log("Can't find library: '" + argv.library + "'");
+                    this.processExit();
+                    break;
+            }
+            var fs = require('fs');
+            if (fs.existsSync(fullOutputPath)
+                && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
+                console.log('Canceling JSON template creation!');
                 this.processExit();
-                break;
-        }
-        var fs = require('fs');
-        if (fs.existsSync(fullOutputPath)
-            && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
-            console.log('Canceling JSON template creation!');
+            }
+            MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
             this.processExit();
         }
-        MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
-        this.processExit();
     };
     MakeCommand.getJsonConfigFilePath = function (filename) {
         var path = require('path');
