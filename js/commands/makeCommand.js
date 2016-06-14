@@ -11,6 +11,7 @@ var async = require('async');
 var request = require('request');
 var fs = require('fs');
 var positive = require('positive');
+var templateCatalogUrl = 'https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/templateCatalog.json';
 var _ = require('lodash');
 var MakeCommand = (function (_super) {
     __extends(MakeCommand, _super);
@@ -36,12 +37,7 @@ var MakeCommand = (function (_super) {
             get: {
                 alias: 'g',
                 type: 'string',
-                desc: 'Get a container cluster template from GitHub (use -ls to list available templates)'
-            },
-            ls: {
-                type: 'boolean',
-                default: false,
-                desc: 'List available Docker container cluster templates'
+                desc: '.. get [templateName]. If no templateName is specified then lists available templates'
             },
             output: {
                 alias: 'o',
@@ -87,130 +83,66 @@ var MakeCommand = (function (_super) {
     MakeCommand.prototype.makeTemplate = function (argv) {
         var _this = this;
         var fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
-        var objectToWrite = argv.full
-            ? firmament_docker_1.DockerDescriptors.dockerContainerDefaultTemplate
-            : firmament_docker_1.DockerDescriptors.dockerContainerConfigTemplate;
-        if (argv.ls) {
-            var templateCatalogUrl = 'https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/templateCatalog.json';
-            request(templateCatalogUrl, function (err, res, body) {
-                try {
-                    var templateCatalog = JSON.parse(body);
-                    console.log('\nAvailable templates:\n');
-                    templateCatalog.forEach(function (template) {
-                        console.log('> ' + template.name);
+        async.waterfall([
+            function (cb) {
+                if (argv.get === undefined) {
+                    cb(null, argv.full
+                        ? firmament_docker_1.DockerDescriptors.dockerContainerDefaultTemplate
+                        : firmament_docker_1.DockerDescriptors.dockerContainerConfigTemplate);
+                }
+                else {
+                    request(templateCatalogUrl, function (err, res, body) {
+                        try {
+                            var templateCatalog = JSON.parse(body);
+                            var templateMap_1 = {};
+                            templateCatalog.forEach(function (template) {
+                                templateMap_1[template.name] = template;
+                            });
+                            if (!argv.get.length) {
+                                console.log('\nAvailable templates:\n');
+                                for (var key in templateMap_1) {
+                                    console.log('> ' + templateMap_1[key].name);
+                                }
+                                cb(null, null);
+                            }
+                            else if (argv.get) {
+                                if (!templateMap_1[argv.get]) {
+                                    cb(new Error("Could not find template '" + argv.get + "'"));
+                                }
+                                else {
+                                    request(templateMap_1[argv.get].url, function (err, res, body) {
+                                        try {
+                                            cb(null, JSON.parse(body));
+                                        }
+                                        catch (e) {
+                                            cb(new Error('Template found but is not valid (not JSON)' + e.message));
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        catch (e) {
+                            cb(new Error('Error getting template catalog ' + e.message));
+                        }
                     });
                 }
-                catch (e) {
-                    console.log('\nError getting template catalog.\n');
+            },
+            function (containerTemplatesToWrite, cb) {
+                if (containerTemplatesToWrite) {
+                    var fs = require('fs');
+                    if (fs.existsSync(fullOutputPath)
+                        && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
+                        cb(null, 'Canceling JSON template creation!');
+                    }
+                    else {
+                        MakeCommand.writeJsonTemplateFile(containerTemplatesToWrite, fullOutputPath);
+                    }
                 }
-                _this.processExit();
-            });
-        }
-        else {
-            switch (argv.library) {
-                case 'genie-ui':
-                    objectToWrite =
-                        [
-                            {
-                                "name": "genie-strongloop",
-                                "Image": "jreeme/genie-ui:09-JUN-2016",
-                                "DockerFilePath": "",
-                                "Hostname": "genie-strongloop",
-                                "ExposedPorts": {
-                                    "8080/tcp": {},
-                                    "8888/tcp": {}
-                                },
-                                "HostConfig": {
-                                    "PortBindings": {
-                                        "8888/tcp": [
-                                            {
-                                                "HostPort": "8888"
-                                            }
-                                        ],
-                                        "8080/tcp": [
-                                            {
-                                                "HostPort": "8080"
-                                            }
-                                        ],
-                                        "8701/tcp": [
-                                            {
-                                                "HostPort": "8701"
-                                            }
-                                        ]
-                                    }
-                                },
-                                "ExpressApps": [
-                                    {
-                                        "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                                        "DeployExisting": true,
-                                        "GitSrcBranchName": "master",
-                                        "StrongLoopBranchName": "deploy",
-                                        "StrongLoopServerUrl": "http://localhost:8701",
-                                        "ServiceName": "GenieUI",
-                                        "DoBowerInstall": true,
-                                        "EnvironmentVariables": {
-                                            "RUN_AS_NODERED": 0,
-                                            "PORT": 8080,
-                                            "USE_NODERED_CLUSTERING": 0,
-                                            "NODE_ENV": "production",
-                                            "GEOCODER_API_KEY": "<ONDEPLOY>",
-                                            "GEOCODER_ENDPOINT": "<ONDEPLOY>"
-                                        },
-                                        "Scripts": [
-                                            {
-                                                "RelativeWorkingDir": ".",
-                                                "Command": "cp",
-                                                "Args": [
-                                                    "server/config.json.template",
-                                                    "server/config.json"
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                                        "DeployExisting": true,
-                                        "GitSrcBranchName": "master",
-                                        "StrongLoopBranchName": "deploy",
-                                        "StrongLoopServerUrl": "http://localhost:8701",
-                                        "ServiceName": "NodeRed",
-                                        "ClusterSize": 1,
-                                        "EnvironmentVariables": {
-                                            "PORT": 8888,
-                                            "RUN_AS_NODERED": 1,
-                                            "USE_NODERED_CLUSTERING": 0,
-                                            "GENIE_HOST": "http://genie-strongloop:8080",
-                                            "NODE_ENV": "production"
-                                        },
-                                        "Scripts": [
-                                            {
-                                                "RelativeWorkingDir": ".",
-                                                "Command": "cp",
-                                                "Args": [
-                                                    "server/config.json.template",
-                                                    "server/config.json"
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ];
-                    break;
-                default:
-                    console.log("Can't find library: '" + argv.library + "'");
-                    this.processExit();
-                    break;
-            }
-            var fs = require('fs');
-            if (fs.existsSync(fullOutputPath)
-                && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
-                console.log('Canceling JSON template creation!');
-                this.processExit();
-            }
-            MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
-            this.processExit();
-        }
+                cb(null);
+            }], function (err, msg) {
+            if (msg === void 0) { msg = null; }
+            _this.processExitWithError(err, msg);
+        });
     };
     MakeCommand.getJsonConfigFilePath = function (filename) {
         var path = require('path');

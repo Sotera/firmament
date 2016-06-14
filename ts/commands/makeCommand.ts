@@ -1,13 +1,14 @@
 import {CommandImpl, ProgressBar, ProgressBarImpl} from 'firmament-yargs';
 import {
   FirmamentDocker, FirmamentDockerImpl, ContainerRemoveResults, DockerContainer, ExpressApp,
-  DockerDescriptors, ContainerConfig, SpawnOptions
+  DockerDescriptors, ContainerConfig
 } from "firmament-docker";
 const log:JSNLog.JSNLogLogger = require('jsnlog').JL();
 const async = require('async');
 const request = require('request');
 const fs = require('fs');
 const positive = require('positive');
+const templateCatalogUrl = 'https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/templateCatalog.json';
 import * as _ from 'lodash';
 interface ErrorEx extends Error {
   statusCode:number,
@@ -41,12 +42,7 @@ export class MakeCommand extends CommandImpl {
       get: {
         alias: 'g',
         type: 'string',
-        desc: 'Get a container cluster template from GitHub (use -ls to list available templates)'
-      },
-      ls: {
-        type: 'boolean',
-        default: false,
-        desc: 'List available Docker container cluster templates'
+        desc: '.. get [templateName]. If no templateName is specified then lists available templates'
       },
       output: {
         alias: 'o',
@@ -92,129 +88,65 @@ export class MakeCommand extends CommandImpl {
 
   private makeTemplate(argv:any) {
     let fullOutputPath = MakeCommand.getJsonConfigFilePath(argv.output);
-    let objectToWrite:any = argv.full
-      ? DockerDescriptors.dockerContainerDefaultTemplate
-      : DockerDescriptors.dockerContainerConfigTemplate;
-    if (argv.ls) {
-      let templateCatalogUrl = 'https://raw.githubusercontent.com/Sotera/firmament/typescript/docker/templateCatalog.json';
-      request(templateCatalogUrl,
-        (err, res, body)=> {
-          try {
-            let templateCatalog:any[] = JSON.parse(body);
-            console.log('\nAvailable templates:\n');
-            templateCatalog.forEach(template=> {
-              console.log('> ' + template.name);
-            });
-          } catch (e) {
-            console.log('\nError getting template catalog.\n');
+    async.waterfall([
+        //Remove all containers mentioned in config file
+        (cb:(err:Error, containerTemplatesToWrite?:any)=>void)=> {
+          if (argv.get === undefined) {
+            cb(null, argv.full
+              ? DockerDescriptors.dockerContainerDefaultTemplate
+              : DockerDescriptors.dockerContainerConfigTemplate);
           }
-          this.processExit();
-        });
-    } else {
-      switch (argv.library) {
-        case 'genie-ui':
-          objectToWrite =
-            [
-              {
-                "name": "genie-strongloop",
-                "Image": "jreeme/genie-ui:09-JUN-2016",
-                "DockerFilePath": "",
-                "Hostname": "genie-strongloop",
-                "ExposedPorts": {
-                  "8080/tcp": {},
-                  "8888/tcp": {}
-                },
-                "HostConfig": {
-                  "PortBindings": {
-                    "8888/tcp": [
-                      {
-                        "HostPort": "8888"
-                      }
-                    ],
-                    "8080/tcp": [
-                      {
-                        "HostPort": "8080"
-                      }
-                    ],
-                    "8701/tcp": [
-                      {
-                        "HostPort": "8701"
-                      }
-                    ]
+          else {
+            request(templateCatalogUrl,
+              (err, res, body)=> {
+                try {
+                  let templateCatalog:any[] = JSON.parse(body);
+                  let templateMap = {};
+                  templateCatalog.forEach(template=> {
+                    templateMap[template.name] = template;
+                  });
+                  if (!argv.get.length) {
+                    console.log('\nAvailable templates:\n');
+                    for (let key in templateMap) {
+                      //noinspection JSUnfilteredForInLoop
+                      console.log('> ' + templateMap[key].name);
+                    }
+                    cb(null, null);
+                  } else if (argv.get) {
+                    if (!templateMap[argv.get]) {
+                      cb(new Error("Could not find template '" + argv.get + "'"));
+                    } else {
+                      request(templateMap[argv.get].url,
+                        (err, res, body)=> {
+                          try {
+                            cb(null, JSON.parse(body));
+                          } catch (e) {
+                            cb(new Error('Template found but is not valid (not JSON)' + e.message));
+                          }
+                        });
+                    }
                   }
-                },
-                "ExpressApps": [
-                  {
-                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                    "DeployExisting": true,
-                    "GitSrcBranchName": "master",
-                    "StrongLoopBranchName": "deploy",
-                    "StrongLoopServerUrl": "http://localhost:8701",
-                    "ServiceName": "GenieUI",
-                    "DoBowerInstall": true,
-                    "EnvironmentVariables": {
-                      "RUN_AS_NODERED": 0,
-                      "PORT": 8080,
-                      "USE_NODERED_CLUSTERING": 0,
-                      "NODE_ENV": "production",
-                      "GEOCODER_API_KEY": "<ONDEPLOY>",
-                      "GEOCODER_ENDPOINT": "<ONDEPLOY>"
-                    },
-                    "Scripts": [
-                      {
-                        "RelativeWorkingDir": ".",
-                        "Command": "cp",
-                        "Args": [
-                          "server/config.json.template",
-                          "server/config.json"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "GitUrl": "https://github.com/Sotera/genie-ui.git",
-                    "DeployExisting": true,
-                    "GitSrcBranchName": "master",
-                    "StrongLoopBranchName": "deploy",
-                    "StrongLoopServerUrl": "http://localhost:8701",
-                    "ServiceName": "NodeRed",
-                    "ClusterSize": 1,
-                    "EnvironmentVariables": {
-                      "PORT": 8888,
-                      "RUN_AS_NODERED": 1,
-                      "USE_NODERED_CLUSTERING": 0,
-                      "GENIE_HOST": "http://genie-strongloop:8080",
-                      "NODE_ENV": "production"
-                    },
-                    "Scripts": [
-                      {
-                        "RelativeWorkingDir": ".",
-                        "Command": "cp",
-                        "Args": [
-                          "server/config.json.template",
-                          "server/config.json"
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ];
-          break;
-        default:
-          console.log("Can't find library: '" + argv.library + "'");
-          this.processExit();
-          break;
-      }
-      var fs = require('fs');
-      if (fs.existsSync(fullOutputPath)
-        && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
-        console.log('Canceling JSON template creation!');
-        this.processExit();
-      }
-      MakeCommand.writeJsonTemplateFile(objectToWrite, fullOutputPath);
-      this.processExit();
-    }
+                } catch (e) {
+                  cb(new Error('Error getting template catalog ' + e.message));
+                }
+              });
+          }
+        },
+        (containerTemplatesToWrite:any, cb:(err:Error, msg?:any)=>void)=> {
+          if(containerTemplatesToWrite){
+            var fs = require('fs');
+            if (fs.existsSync(fullOutputPath)
+              && !positive("Config file '" + fullOutputPath + "' already exists. Overwrite? [Y/n] ", true)) {
+              cb(null, 'Canceling JSON template creation!');
+            } else {
+              MakeCommand.writeJsonTemplateFile(containerTemplatesToWrite, fullOutputPath);
+            }
+          }
+          cb(null);
+        }],
+      (err:Error, msg:any = null)=> {
+        this.processExitWithError(err, msg);
+      });
   }
 
   private static getJsonConfigFilePath(filename) {
@@ -363,8 +295,8 @@ export class MakeCommand extends CommandImpl {
                     cb(null);
                   },
                   (cb:(err:Error, result?:any)=>void)=> {//Clone Express app Git Repo
-                    //noinspection JSUnusedLocalSymbols
                     //Check for existence of GitCloneFolder ...
+                    //noinspection JSUnusedLocalSymbols
                     fs.stat(expressApp.GitCloneFolder, (err, stats)=> {
                       if (err) {
                         //Directory does not exist, clone it
@@ -417,6 +349,7 @@ export class MakeCommand extends CommandImpl {
                     expressApp.EnvironmentVariables = expressApp.EnvironmentVariables || {};
                     let cmd = ['env-set', expressApp.ServiceName];
                     for (let environmentVariable in expressApp.EnvironmentVariables) {
+                      //noinspection JSUnfilteredForInLoop
                       cmd.push(environmentVariable
                         + '='
                         + expressApp.EnvironmentVariables[environmentVariable]);
