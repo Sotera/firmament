@@ -15,13 +15,27 @@ export class PrepLinuxCommand extends CommandImpl {
     this.aliases = ['linux-prep', 'lp'];
     this.command = '<subCommand>';
     this.commandDesc = 'Prepare new linux instances to work with firmament';
-    this.pushShellCommand();
+    this.pushUbuntu_14_04_Command();
+    this.pushCentos_6_Command();
   }
 
-  private pushShellCommand() {
+  private pushCentos_6_Command() {
+    let shellCommand = new CommandImpl();
+    shellCommand.aliases = ['centos_6'];
+    shellCommand.commandDesc = 'Prep Centos v.6 machine to run firmament';
+    shellCommand.handler = (argv)=> {
+      //noinspection JSUnusedLocalSymbols
+      this.prepLinux.centos_6(argv, (err:Error, result:string[])=>{
+        this.processExitWithError(err);
+      });
+    };
+    this.subCommands.push(shellCommand);
+  }
+  
+  private pushUbuntu_14_04_Command() {
     let shellCommand = new CommandImpl();
     shellCommand.aliases = ['ubuntu-14.04'];
-    shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament';
+    shellCommand.commandDesc = 'Prep Ubuntu v.14.04 machine to run firmament';
     shellCommand.handler = (argv)=> {
       //noinspection JSUnusedLocalSymbols
       this.prepLinux.ubuntu_14_04(argv, (err:Error, result:string[])=>{

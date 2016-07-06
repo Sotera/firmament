@@ -19,13 +19,26 @@ var PrepLinuxCommand = (function (_super) {
         this.aliases = ['linux-prep', 'lp'];
         this.command = '<subCommand>';
         this.commandDesc = 'Prepare new linux instances to work with firmament';
-        this.pushShellCommand();
+        this.pushUbuntu_14_04_Command();
+        this.pushCentos_6_Command();
     };
-    PrepLinuxCommand.prototype.pushShellCommand = function () {
+    PrepLinuxCommand.prototype.pushCentos_6_Command = function () {
+        var _this = this;
+        var shellCommand = new firmament_yargs_1.CommandImpl();
+        shellCommand.aliases = ['centos_6'];
+        shellCommand.commandDesc = 'Prep Centos v.6 machine to run firmament';
+        shellCommand.handler = function (argv) {
+            _this.prepLinux.centos_6(argv, function (err, result) {
+                _this.processExitWithError(err);
+            });
+        };
+        this.subCommands.push(shellCommand);
+    };
+    PrepLinuxCommand.prototype.pushUbuntu_14_04_Command = function () {
         var _this = this;
         var shellCommand = new firmament_yargs_1.CommandImpl();
         shellCommand.aliases = ['ubuntu-14.04'];
-        shellCommand.commandDesc = 'Prep and Ubuntu v.14.04 machine to run firmament';
+        shellCommand.commandDesc = 'Prep Ubuntu v.14.04 machine to run firmament';
         shellCommand.handler = function (argv) {
             _this.prepLinux.ubuntu_14_04(argv, function (err, result) {
                 _this.processExitWithError(err);

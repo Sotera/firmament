@@ -11,6 +11,27 @@ var PrepLinuxImpl = (function (_super) {
     function PrepLinuxImpl() {
         _super.call(this);
     }
+    PrepLinuxImpl.prototype.centos_6 = function (argv, cb) {
+        console.log('Doing the CentOS 6 Boogie!');
+        var me = this;
+        async.series([
+            function (cb) {
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set -o vi" >> ~/.bashrc'], null, cb);
+            },
+            function (cb) {
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias f=\'firmament\'" >> ~/.bashrc'], null, cb);
+            },
+            function (cb) {
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "alias d=\'docker\'" >> ~/.bashrc'], null, cb);
+            },
+            function (cb) {
+                me.spawnShellCommand(['/bin/sh', '-c', 'echo "set nu" >> ~/.vimrc'], null, cb);
+            },
+            function (cb) {
+                me.sudoSpawn(['yum', 'update'], cb);
+            }
+        ], cb);
+    };
     PrepLinuxImpl.prototype.ubuntu_14_04 = function (argv, cb) {
         var me = this;
         async.series([
