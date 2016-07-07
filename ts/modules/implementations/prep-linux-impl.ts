@@ -6,7 +6,7 @@ export class PrepLinuxImpl extends CommandImpl implements PrepLinux {
     super();
   }
 
-  centos_6(argv:any, cb:(err:Error, result:any)=>void) {
+  centos_7(argv:any, cb:(err:Error, result:any)=>void) {
     //TODO: Just hack it in for now, later give user choices of what to do
     console.log('Doing the CentOS 6 Boogie!');
     var me = this;

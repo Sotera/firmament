@@ -25,10 +25,10 @@ var PrepLinuxCommand = (function (_super) {
     PrepLinuxCommand.prototype.pushCentos_6_Command = function () {
         var _this = this;
         var shellCommand = new firmament_yargs_1.CommandImpl();
-        shellCommand.aliases = ['centos_6'];
-        shellCommand.commandDesc = 'Prep Centos v.6 machine to run firmament';
+        shellCommand.aliases = ['centos-7'];
+        shellCommand.commandDesc = 'Prep Centos v.7 machine to run firmament';
         shellCommand.handler = function (argv) {
-            _this.prepLinux.centos_6(argv, function (err, result) {
+            _this.prepLinux.centos_7(argv, function (err, result) {
                 _this.processExitWithError(err);
             });
         };

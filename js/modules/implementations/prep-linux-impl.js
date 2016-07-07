@@ -11,7 +11,7 @@ var PrepLinuxImpl = (function (_super) {
     function PrepLinuxImpl() {
         _super.call(this);
     }
-    PrepLinuxImpl.prototype.centos_6 = function (argv, cb) {
+    PrepLinuxImpl.prototype.centos_7 = function (argv, cb) {
         console.log('Doing the CentOS 6 Boogie!');
         var me = this;
         async.series([

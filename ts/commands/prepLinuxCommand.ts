@@ -21,11 +21,11 @@ export class PrepLinuxCommand extends CommandImpl {
 
   private pushCentos_6_Command() {
     let shellCommand = new CommandImpl();
-    shellCommand.aliases = ['centos_6'];
-    shellCommand.commandDesc = 'Prep Centos v.6 machine to run firmament';
+    shellCommand.aliases = ['centos-7'];
+    shellCommand.commandDesc = 'Prep Centos v.7 machine to run firmament';
     shellCommand.handler = (argv)=> {
       //noinspection JSUnusedLocalSymbols
-      this.prepLinux.centos_6(argv, (err:Error, result:string[])=>{
+      this.prepLinux.centos_7(argv, (err:Error, result:string[])=>{
         this.processExitWithError(err);
       });
     };
