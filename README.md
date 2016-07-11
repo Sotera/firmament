@@ -10,7 +10,7 @@ Provides a simplified configuration of interconnected [Docker containers](https:
 ```
 wget https://raw.githubusercontent.com/Sotera/firmament/typescript/_install_node.sh
 sudo chmod 700 _install_node.sh
-./_install_node
+./_install_node.sh
 firmament lp ubuntu-14.04
 <close your terminal and log back in for changes to take effect.>
 ```
