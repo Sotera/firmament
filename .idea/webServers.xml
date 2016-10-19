@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="c8a6deeb-4c62-44a3-ab55-2ec5c11ba017" name="staging1.silverdale.dev" url="http://staging1.silverdale.dev">
+        <fileTransfer host="staging1.silverdale.dev" port="22" rootFolder="/home/jreeme" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
