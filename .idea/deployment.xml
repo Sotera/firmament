@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData">
+  <component name="PublishConfigData" autoUpload="Always" serverName="staging1.silverdale.dev" autoUploadExternalChanges="true">
     <serverData>
       <paths name="staging1.silverdale.dev">
         <serverdata>
           <mappings>
             <mapping deploy="/src/firmament" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/node_modules" />
+            <excludedPath local="true" path="$PROJECT_DIR$/legacy" />
+            <excludedPath local="true" path="$PROJECT_DIR$/docker" />
+            <excludedPath local="true" path="$PROJECT_DIR$/ts" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>

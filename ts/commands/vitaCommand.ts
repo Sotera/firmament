@@ -24,8 +24,9 @@ export class VitaCommand extends CommandImpl {
     shellCommand.commandDesc = 'Execute VITA run command';
     shellCommand.handler = (argv)=> {
       //noinspection JSUnusedLocalSymbols
-      this.vita.run();
-      this.processExit(0);
+      this.vita.run(()=>{
+        this.processExit(0);
+      });
     };
     this.subCommands.push(shellCommand);
   }

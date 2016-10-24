@@ -27,11 +27,13 @@
     "typings": "^1.4.0"
   },
   "dependencies": {
-    "async": "^2.0.0-rc.2",
+    "async": "^2.1.2",
     "dockerode": "^2.2.10",
     "filesize": "^3.2.1",
     "firmament-docker": "^0.1.22",
     "firmament-yargs": "^0.1.21",
+    "glob": "^7.1.1",
+    "glob-fs": "^0.1.6",
     "jsnlog": "^2.17.0",
     "jsonfile": "^2.2.3",
     "lodash": "^4.8.2",
