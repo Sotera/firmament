@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,
@@ -11,6 +11,19 @@
     "suppressImplicitAnyIndexErrors": true,
     "outDir": "../js",
     "pretty": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "types": [
+      "chai",
+      "inversify",
+      "mocha",
+      "node",
+      "reflect-metadata"
+    ],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   }
 }

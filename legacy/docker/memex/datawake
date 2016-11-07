@@ -1,7 +1,0 @@
-#!/bin/bash
-docker run -dt --name data-container -h data-container jreeme/data-container:7.0
-docker run -dt --volumes-from data-container --name mongo -h mongo jreeme/mongo:7.0
-docker run -dt --volumes-from data-container --name mysql -h mysql jreeme/mysql:7.0
-docker run -dt --name loopback -h loopback --link mongo:mongo --link mysql:mysql -p 8701:8701 -p 3001:3001 jreeme/loopback:7.0
-docker run -dt --name webapp -h webapp --link loopback:loopback -p 8702:8701 -p 3002:3001 jreeme/webapp:7.0
-docker run -dt --name tangelo -h tangelo --link mysql:mysql -p 80:80 jreeme/tangelo:7.0

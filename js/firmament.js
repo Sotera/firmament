@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 "use strict";
-var firmament_yargs_1 = require('firmament-yargs');
-var makeCommand_1 = require('./commands/makeCommand');
-var dockerCommand_1 = require('./commands/dockerCommand');
-var prepLinuxCommand_1 = require("./commands/prepLinuxCommand");
-var commandLine = new firmament_yargs_1.CommandLineImpl({
-    version: function () {
+require('reflect-metadata');
+const firmament_docker_1 = require('firmament-docker');
+let commandLine = firmament_docker_1.kernel.get('CommandLine');
+commandLine.init({
+    version: () => {
         return require('../package.json').version;
     }
 });
-commandLine.addCommand(new makeCommand_1.MakeCommand());
-commandLine.addCommand(new dockerCommand_1.DockerCommand());
-commandLine.addCommand(new prepLinuxCommand_1.PrepLinuxCommand());
+let dockerCommand = firmament_docker_1.kernel.get('DockerCommand');
+commandLine.addCommand(dockerCommand);
 commandLine.exec();
 //# sourceMappingURL=firmament.js.map
