@@ -34,6 +34,7 @@
     "typescript": "^2.0.3"
   },
   "dependencies": {
+    "firmament-docker": "^0.2.26",
     "firmament-yargs": "^0.2.14",
     "inversify": "^3.0.0-beta.1",
     "lodash": "^4.17.1",

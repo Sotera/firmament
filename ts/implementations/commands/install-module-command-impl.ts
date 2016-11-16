@@ -54,7 +54,8 @@ export class InstallModuleCommandImpl implements Command {
         me.commandUtil.processExit(1, `\nModule names must start with '${modulePrefix}'\n`);
       }
       let prefix = path.resolve(__dirname, '../../..');
-      me.spawn.sudoSpawnSync(['npm', 'install', '--save', `--prefix ${prefix}`, argv.name]);
+      let cmd = ['npm', 'install', '--save', `--prefix ${prefix}`, argv.name];
+      me.spawn.sudoSpawnSync(cmd);
     };
     me.subCommands.push(installModuleCommand);
   }
