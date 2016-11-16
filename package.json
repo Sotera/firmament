@@ -1,6 +1,6 @@
 {
   "name": "firmament",
-  "version": "0.2.27",
+  "version": "0.2.28",
   "description": "Modularized shell for NodeJS CLI applications",
   "main": "js/firmament.js",
   "preferGlobal": true,

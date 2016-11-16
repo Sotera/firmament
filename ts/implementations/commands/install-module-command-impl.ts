@@ -1,5 +1,7 @@
 import {injectable, inject} from "inversify";
-import {Command, CommandUtil, kernel} from 'firmament-yargs';
+import {Command, CommandUtil, kernel, Spawn} from 'firmament-yargs';
+import path = require('path');
+import * as _ from 'lodash';
 
 @injectable()
 export class InstallModuleCommandImpl implements Command {
@@ -8,15 +10,18 @@ export class InstallModuleCommandImpl implements Command {
   commandDesc: string = '';
   //noinspection JSUnusedGlobalSymbols
   //noinspection JSUnusedLocalSymbols
-  handler: (argv: any)=>void = (argv: any)=> {
+  handler: (argv: any)=>void = (argv: any) => {
   };
   options: any = {};
   subCommands: Command[] = [];
   private commandUtil: CommandUtil;
+  private spawn: Spawn;
 
-  constructor(@inject('CommandUtil') _commandUtil: CommandUtil){
+  constructor(@inject('CommandUtil') _commandUtil: CommandUtil,
+              @inject('Spawn') _spawn: Spawn) {
     this.buildCommandTree();
     this.commandUtil = _commandUtil;
+    this.spawn = _spawn;
   }
 
   private buildCommandTree() {
@@ -33,14 +38,23 @@ export class InstallModuleCommandImpl implements Command {
     installModuleCommand.commandDesc = 'Install firmament module from NPM repository';
     //noinspection ReservedWordAsName
     installModuleCommand.options = {
-      input: {
-        alias: 'i',
+      name: {
+        alias: 'n',
+        default: '',
         type: 'string',
         desc: 'Name the firmament module'
       }
     };
-    installModuleCommand.handler = (argv)=> {
-      var a = argv;
+    installModuleCommand.handler = (argv) => {
+      const modulePrefix = 'firmament-';
+      if (!argv.name) {
+        me.commandUtil.processExit(1, `\nPlease provide a module name using the '--name <module_name>' switch\n`);
+      }
+      if (!_.startsWith(argv.name, modulePrefix)) {
+        me.commandUtil.processExit(1, `\nModule names must start with '${modulePrefix}'\n`);
+      }
+      let prefix = path.resolve(__dirname, '../../..');
+      me.spawn.sudoSpawnSync(['npm', 'install', '--save', `--prefix ${prefix}`, argv.name]);
     };
     me.subCommands.push(installModuleCommand);
   }
