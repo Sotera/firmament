@@ -54,26 +54,12 @@ export class InstallModuleCommandImpl implements Command {
         me.commandUtil.processExit(1, `\nModule names must start with '${modulePrefix}'\n`);
       }
       let prefix = path.resolve(__dirname, '../../..');
-      let cmd = ['npm', 'install', '--save', `--prefix ${prefix}`, argv.name];
-      me.spawn.sudoSpawnSync(cmd);
+      let cmd = ['npm', 'install', '--save', '--prefix', `${prefix}`, argv.name];
+      me.spawn.sudoSpawn(cmd, (err: Error) => {
+        me.commandUtil.processExitWithError(err, `Looks like module '${argv.name}' installed successfully!`);
+      });
     };
     me.subCommands.push(installModuleCommand);
   }
 }
 
-/*
- const spawn = kernel.get<Spawn>('Spawn');
- spawn.spawnShellCommandAsync(
- ['npm', 'ls', '--json'],
- {
- stdio: 'pipe',
- cwd: require('path').resolve(__dirname, '..')
- },
- (err: Error, result: string) => {
- if (err) {
- console.error(err.message);
- return;
- }
- let npmInfo: NpmInfo = JSON.parse(result);
- processNpmInfo(npmInfo);
- });*/
