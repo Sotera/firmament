@@ -1,6 +1,6 @@
 {
   "name": "firmament",
-  "version": "0.2.29",
+  "version": "0.2.30",
   "description": "Modularized shell for NodeJS CLI applications",
   "main": "js/firmament.js",
   "preferGlobal": true,
@@ -34,7 +34,8 @@
     "typescript": "^2.0.3"
   },
   "dependencies": {
-    "firmament-yargs": "^0.2.14",
+    "firmament-bash": "0.0.3",
+    "firmament-yargs": "^0.2.15",
     "inversify": "^3.0.0-beta.1",
     "lodash": "^4.17.1",
     "reflect-metadata": "^0.1.3"
