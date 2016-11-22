@@ -3,13 +3,16 @@ import 'reflect-metadata';
 import {Command, CommandLine, kernel} from 'firmament-yargs';
 import * as _ from 'lodash';
 import {interfaces as container_interfaces} from "inversify";
-import {InstallModuleCommandImpl} from "./implementations/commands/install-module-command-impl";
+import {ModuleManagementCommandImpl} from "./implementations/commands/module-management-command-impl";
+import {ModuleManagement} from "./interfaces/ModuleManagement";
+import {ModuleManagementImpl} from "./implementations/ModuleManagementImpl";
 const commandLine = kernel.get<CommandLine>('CommandLine');
 const allKernels: container_interfaces.Container[] = [];
 const package_json: NpmInfo = require('../package.json');
 
 //Bind internal commands for IoC
-kernel.bind<Command>('Command').to(InstallModuleCommandImpl);
+kernel.bind<Command>('Command').to(ModuleManagementCommandImpl);
+kernel.bind<ModuleManagement>('ModuleManagement').to(ModuleManagementImpl);
 allKernels.push(kernel);
 
 //Allow user to see version of firmament using yargs
@@ -33,8 +36,9 @@ function addCommandsFromKernels(kernels: container_interfaces.Container[]) {
 
 //Look at dependencies in our package.json file for modules whose names start with 'firmament-'
 (function processNpmInfo(npmInfo: NpmInfo) {
+  let moduleManagement = kernel.get<ModuleManagement>('ModuleManagement');
   let firmamentModules = Object.getOwnPropertyNames(npmInfo.dependencies).filter(key => {
-    return _.startsWith(key, 'firmament-');
+    return _.startsWith(key, moduleManagement.modulePrefix);
   });
   firmamentModules.forEach(moduleName => {
     allKernels.push(require(moduleName).kernel);
