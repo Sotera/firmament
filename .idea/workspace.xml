@@ -27,8 +27,8 @@
       <file leaf-file-name="package.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/package.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="666">
-              <caret line="37" column="0" lean-forward="false" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
+            <state relative-caret-position="36">
+              <caret line="2" column="19" lean-forward="false" selection-start-line="2" selection-start-column="19" selection-end-line="2" selection-end-column="19" />
               <folding />
             </state>
           </provider>
@@ -75,9 +75,9 @@
     <handled-path value="$PROJECT_DIR$/node_modules" />
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-1" />
+    <option name="x" value="1919" />
     <option name="width" value="1922" />
-    <option name="height" value="1080" />
+    <option name="height" value="1055" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
@@ -108,7 +108,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -203,7 +202,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="firmament-yargs" />
+              <option name="myItemId" value="firmament-docker" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -241,6 +240,7 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -397,7 +397,8 @@
       <workItem from="1481204946264" duration="62000" />
       <workItem from="1481212562103" duration="12185000" />
       <workItem from="1481309990636" duration="147000" />
-      <workItem from="1481725345794" duration="822000" />
+      <workItem from="1481725345794" duration="4070000" />
+      <workItem from="1481909560020" duration="32000" />
     </task>
     <task id="LOCAL-00002" summary="Blast js directory">
       <created>1479832314807</created>
@@ -448,23 +449,30 @@
       <option name="project" value="LOCAL" />
       <updated>1481228064132</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="v.0.2.41 -&gt; NPM">
+      <created>1481726387852</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1481726387852</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="23791000" />
+    <option name="totallyTimeSpent" value="27071000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1" y="0" width="1922" height="1080" extended-state="6" />
+    <frame x="1919" y="0" width="1922" height="1055" extended-state="6" />
     <editor active="false" />
     <layout>
-      <window_info id="TypeScript" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.31732777" sideWeight="0.49710068" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1391671" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="TypeScript" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.31725615" sideWeight="0.49710068" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1391671" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3279743" sideWeight="0.5028993" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3376206" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33507308" sideWeight="0.49815497" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3436831" sideWeight="0.49815497" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
@@ -501,6 +509,23 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="processedProjectFiles" value="true" />
+    <option name="exactExcludedFiles">
+      <list>
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/folderMonitorService.js" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/dbMonitorService.js" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/authentication.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/webpack.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/dbMonitorService.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/static.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/folderMonitorService.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/root.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/inversify.config.js" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/server.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/inversify.config.js.map" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/01-populate-db.js" />
+        <option value="$PROJECT_DIR$/../loopback-webpack-typescript-amino/server/boot/01-populate-db.js.map" />
+      </list>
+    </option>
     <option name="configsExcludedFiles">
       <set>
         <option value="$PROJECT_DIR$/js" />
@@ -524,7 +549,8 @@
     <MESSAGE value="v. -&gt; 0.2.37 upload to NPM" />
     <MESSAGE value="Homeward!" />
     <MESSAGE value="Upgrade yargs for new ProgressBar" />
-    <option name="LAST_COMMIT_MESSAGE" value="Upgrade yargs for new ProgressBar" />
+    <MESSAGE value="v.0.2.41 -&gt; NPM" />
+    <option name="LAST_COMMIT_MESSAGE" value="v.0.2.41 -&gt; NPM" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -718,26 +744,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/node_modules/firmament-docker/node_modules/firmament-yargs/package.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/node_modules/firmament-docker/node_modules/firmament-yargs/package.json" />
     <entry file="file://$PROJECT_DIR$/node_modules/firmament-yargs/package.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/package.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="666">
-          <caret line="37" column="0" lean-forward="false" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
+        <state relative-caret-position="36">
+          <caret line="2" column="19" lean-forward="false" selection-start-line="2" selection-start-column="19" selection-end-line="2" selection-end-column="19" />
           <folding />
         </state>
       </provider>
