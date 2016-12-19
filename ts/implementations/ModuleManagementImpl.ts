@@ -27,7 +27,8 @@ export class ModuleManagementImpl implements ModuleManagement {
       me.commandUtil.processExit(1, `\nPlease provide a module name using the '--name <module_name>' switch\n`);
     }
     if (!_.startsWith(argv.name, me.modulePrefix)) {
-      me.commandUtil.processExit(1, `\nModule names must start with '${me.modulePrefix}'\n`);
+      argv.name = `${me.modulePrefix}${argv.name}`;
+      //me.commandUtil.processExit(1, `\nModule names must start with '${me.modulePrefix}'\n`);
     }
     let prefix = path.resolve(__dirname, '../..');
     let cmd = ['npm', 'install', '--save', '--prefix', `${prefix}`, argv.name];
