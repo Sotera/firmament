@@ -8,15 +8,13 @@ export class ModuleManagementCommandImpl implements Command {
   command: string = '';
   commandDesc: string = '';
   //noinspection JSUnusedGlobalSymbols
-  //noinspection JSUnusedLocalSymbols
-  handler: (argv: any)=>void = (argv: any) => {
+  handler: (argv: any)=>void = () => {
   };
+  //noinspection JSUnusedGlobalSymbols
   options: any = {};
   subCommands: Command[] = [];
-  private moduleManagement: ModuleManagement;
 
-  constructor(@inject('ModuleManagement') _moduleManagement: ModuleManagement) {
-    this.moduleManagement = _moduleManagement;
+  constructor(@inject('ModuleManagement') private moduleManagement: ModuleManagement) {
     this.buildCommandTree();
   }
 

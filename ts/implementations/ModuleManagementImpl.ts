@@ -8,13 +8,8 @@ const which = require('which');
 
 @injectable()
 export class ModuleManagementImpl implements ModuleManagement {
-  private commandUtil: CommandUtil;
-  private spawn: Spawn;
-
-  constructor(@inject('CommandUtil') _commandUtil: CommandUtil,
-              @inject('Spawn') _spawn: Spawn) {
-    this.commandUtil = _commandUtil;
-    this.spawn = _spawn;
+  constructor(@inject('CommandUtil') private commandUtil: CommandUtil,
+              @inject('Spawn') private spawn: Spawn) {
   }
 
   get modulePrefix(): string {
@@ -36,14 +31,14 @@ export class ModuleManagementImpl implements ModuleManagement {
       (err: Error, result: string) => {
         me.commandUtil.stdoutWrite(result);
       },
-      (err: Error, result: string) => {
+      (err: Error) => {
         if (err) {
           //Assume the error was permission related and retry under 'sudo'
           me.spawn.sudoSpawnAsync(cmd, null,
             (err: Error, result: string) => {
               me.commandUtil.stdoutWrite(result);
             },
-            (err: Error, result: string) => {
+            (err: Error) => {
               if (err) {
                 me.commandUtil.processExitWithError(err);
               } else {
