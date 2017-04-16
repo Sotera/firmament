@@ -30,7 +30,7 @@
     "@types/mocha": "^2.2.32",
     "@types/node": "^6.0.45",
     "@types/reflect-metadata": "0.0.5",
-    "typescript": "2.1.5",
+    "typescript": "^2.2.2",
     "chai": "^3.5.0",
     "mocha": "^2.5.3"
   },
