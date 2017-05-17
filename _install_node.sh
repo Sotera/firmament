@@ -8,5 +8,5 @@ if ! type "curl" >/dev/null;
         exit 1
 fi
 
-sudo sh -c "curl https://nodejs.org/dist/v5.9.1/node-v5.9.1-linux-x64.tar.gz | tar -C /usr/local --strip-components 1 -xzv && /usr/local/bin/npm i -g firmament"
+sudo sh -c "curl https://nodejs.org/dist/v6.9.4/node-v6.9.4-linux-x64.tar.gz | tar -C /usr/local --strip-components 1 -xzv && /usr/local/bin/npm i -g firmament"
 firmament
