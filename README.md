@@ -15,6 +15,19 @@ firmament lp ubuntu-14.04
 <close your terminal and log back in for changes to take effect.>
 ```
 
+## Updated (Firmament Modules) Install Node & Firmament with shell script (Easiest)
+```
+wget https://raw.githubusercontent.com/Sotera/firmament/shell/_install_node.sh
+sudo chmod 700 _install_node.sh
+./_install_node.sh
+<close your terminal and log back in for changes to take effect.>
+f module i -n bash (install bash module)
+f bash p -i (get OS list to prep)
+f bash p -i prep-ubuntu-server-16.04 (run the OS prep)
+f module i -n docker (install docker module)
+f m t
+```
+
 ## Manually install firmament
 ```Bash
 $ wget https://github.com/sotera/firmament/raw/master/install-scripts/prep-ubuntu14.04.sh
