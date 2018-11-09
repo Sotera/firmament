@@ -1,6 +1,6 @@
-import {injectable, inject} from "inversify";
-import {ModuleManagement} from "../interfaces/ModuleManagement";
-import {CommandUtil, Spawn} from "firmament-yargs";
+import {injectable, inject} from 'inversify';
+import {ModuleManagement} from '../interfaces/ModuleManagement';
+import {CommandUtil, Spawn} from 'firmament-yargs';
 import path = require('path');
 import fs = require('fs');
 import * as _ from 'lodash';

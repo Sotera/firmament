@@ -2,17 +2,23 @@
 import 'reflect-metadata';
 import {Command, CommandLine, kernel} from 'firmament-yargs';
 import * as _ from 'lodash';
-import {interfaces as container_interfaces} from "inversify";
-import {ModuleManagementCommandImpl} from "./implementations/commands/module-management-command-impl";
-import {ModuleManagement} from "./interfaces/ModuleManagement";
-import {ModuleManagementImpl} from "./implementations/ModuleManagementImpl";
+import {interfaces as container_interfaces} from 'inversify';
+import {ModuleManagementCommandImpl} from './implementations/commands/module-management-command-impl';
+import {ModuleManagement} from './interfaces/ModuleManagement';
+import {ModuleManagementImpl} from './implementations/ModuleManagementImpl';
+import {PackageCommandImpl} from './implementations/commands/package-command-impl';
+import {Package} from './interfaces/Package';
+import {PackageImpl} from './implementations/PackageImpl';
+
 const commandLine = kernel.get<CommandLine>('CommandLine');
 const allKernels: container_interfaces.Container[] = [];
 const package_json: NpmInfo = require('../package.json');
 
 //Bind internal commands for IoC
 kernel.bind<Command>('Command').to(ModuleManagementCommandImpl);
+kernel.bind<Command>('Command').to(PackageCommandImpl);
 kernel.bind<ModuleManagement>('ModuleManagement').to(ModuleManagementImpl);
+kernel.bind<Package>('Package').to(PackageImpl);
 allKernels.push(kernel);
 
 //Allow user to see version of firmament using yargs

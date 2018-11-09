@@ -1,6 +1,6 @@
-import {injectable, inject} from "inversify";
+import {injectable, inject} from 'inversify';
 import {Command, kernel} from 'firmament-yargs';
-import {ModuleManagement} from "../../interfaces/ModuleManagement";
+import {ModuleManagement} from '../../interfaces/ModuleManagement';
 
 @injectable()
 export class ModuleManagementCommandImpl implements Command {
