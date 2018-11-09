@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4bf86cfd-93d6-4c49-bd41-72518b46a432" name="Default" comment="v.1.3.13 -&gt; NPM &amp; Get rid of package-lock.json">
+    <list default="true" id="4bf86cfd-93d6-4c49-bd41-72518b46a432" name="Default" comment="v.1.3.14 -&gt; NPM &amp; Rework npm call">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
@@ -22,28 +21,28 @@
     <session id="529857377">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
-          <entry key="project.open.time.0" value="3" />
-          <entry key="project.opened" value="3" />
+          <entry key="project.closed" value="2" />
+          <entry key="project.open.time.0" value="4" />
+          <entry key="project.opened" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="json" value="52" />
-          <entry key="ts" value="42" />
-          <entry key="txt" value="16" />
+          <entry key="json" value="63" />
+          <entry key="ts" value="96" />
+          <entry key="txt" value="34" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="52" />
-          <entry key="PLAIN_TEXT" value="16" />
-          <entry key="TypeScript" value="42" />
+          <entry key="JSON" value="63" />
+          <entry key="PLAIN_TEXT" value="34" />
+          <entry key="TypeScript" value="96" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.js.language.service.starts">
         <counts>
-          <entry key="TypeScriptServerServiceImpl" value="2" />
+          <entry key="TypeScriptServerServiceImpl" value="3" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
@@ -67,8 +66,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/package.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="37" selection-start-line="37" selection-end-line="37" />
+            <state relative-caret-position="255">
+              <caret line="17" column="9" selection-start-line="17" selection-start-column="9" selection-end-line="17" selection-end-column="9" />
             </state>
           </provider>
         </entry>
@@ -76,8 +75,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="29" column="4" selection-start-line="29" selection-start-column="4" selection-end-line="29" selection-end-column="4" />
+            <state relative-caret-position="180">
+              <caret line="26" column="8" selection-start-line="26" selection-start-column="8" selection-end-line="26" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -148,6 +147,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -159,29 +159,6 @@
               <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
               <item name="firmament" type="462c0819:PsiDirectoryNode" />
               <item name="js" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
-              <item name="firmament" type="462c0819:PsiDirectoryNode" />
-              <item name="node_modules" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
-              <item name="firmament" type="462c0819:PsiDirectoryNode" />
-              <item name="node_modules" type="462c0819:PsiDirectoryNode" />
-              <item name="firmament-bash" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
-              <item name="firmament" type="462c0819:PsiDirectoryNode" />
-              <item name="node_modules" type="462c0819:PsiDirectoryNode" />
-              <item name="firmament-docker" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
-              <item name="firmament" type="462c0819:PsiDirectoryNode" />
-              <item name="node_modules" type="462c0819:PsiDirectoryNode" />
-              <item name="firmament-yargs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="firmament" type="b2602c69:ProjectViewProjectNode" />
@@ -198,7 +175,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -329,7 +305,8 @@
       <workItem from="1523980655488" duration="21000" />
       <workItem from="1541426860235" duration="770000" />
       <workItem from="1541704643758" duration="23000" />
-      <workItem from="1541707972681" duration="1985000" />
+      <workItem from="1541707972681" duration="2729000" />
+      <workItem from="1541767646324" duration="74000" />
     </task>
     <task id="LOCAL-00002" summary="Blast js directory">
       <created>1479832314807</created>
@@ -443,28 +420,36 @@
       <option name="project" value="LOCAL" />
       <updated>1541708511435</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="v.1.3.14 -&gt; NPM &amp; Rework npm call">
+      <created>1541710749065</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1541710749065</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="38659000" />
+    <option name="totallyTimeSpent" value="39477000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1919" y="0" width="1922" height="1053" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.465625" visible="true" weight="0.1398079" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.465625" visible="true" weight="0.14140876" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="npm" order="2" sideWeight="0.5335413" side_tool="true" weight="0.13825858" />
       <window_info id="Favorites" order="3" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32045928" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32938644" />
-      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.28817204" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.28817204" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="TypeScript" order="7" sideWeight="0.49710068" weight="0.30430108" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49815497" weight="0.30322582" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" sideWeight="0.49815497" visible="true" weight="0.30322582" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5028993" side_tool="true" weight="0.3279743" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.33690986" />
       <window_info anchor="bottom" id="Inspection Results" order="11" weight="0.3290461" />
@@ -528,7 +513,8 @@
     <MESSAGE value="v.1.3.8 -&gt; NPM (new yargs, 1.1.9)" />
     <MESSAGE value="v.1.3.10 -&gt; NPM (new firmament-yargs, 1.1.12)" />
     <MESSAGE value="v.1.3.13 -&gt; NPM &amp; Get rid of package-lock.json" />
-    <option name="LAST_COMMIT_MESSAGE" value="v.1.3.13 -&gt; NPM &amp; Get rid of package-lock.json" />
+    <MESSAGE value="v.1.3.14 -&gt; NPM &amp; Rework npm call" />
+    <option name="LAST_COMMIT_MESSAGE" value="v.1.3.14 -&gt; NPM &amp; Rework npm call" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -636,15 +622,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/package.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="37" selection-start-line="37" selection-end-line="37" />
+        <state relative-caret-position="255">
+          <caret line="17" column="9" selection-start-line="17" selection-start-column="9" selection-end-line="17" selection-end-column="9" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="29" column="4" selection-start-line="29" selection-start-column="4" selection-end-line="29" selection-end-column="4" />
+        <state relative-caret-position="180">
+          <caret line="26" column="8" selection-start-line="26" selection-start-column="8" selection-end-line="26" selection-end-column="8" />
         </state>
       </provider>
     </entry>

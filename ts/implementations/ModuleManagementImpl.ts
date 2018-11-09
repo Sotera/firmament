@@ -16,7 +16,7 @@ export class ModuleManagementImpl implements ModuleManagement {
   }
 
   installModule(argv: any) {
-    let me = this;
+    const me = this;
     if(!argv.name) {
       me.commandUtil.processExit(1, `\nPlease provide a module name using the '--name <module_name>' switch\n`);
     }
@@ -24,10 +24,9 @@ export class ModuleManagementImpl implements ModuleManagement {
       argv.name = `${me.modulePrefix}${argv.name}`;
       //me.commandUtil.processExit(1, `\nModule names must start with '${me.modulePrefix}'\n`);
     }
-    let prefix = path.resolve(__dirname, '../..');
-    //let cmd = ['npm', 'install', '--save', '--prefix', `${prefix}`, argv.name];
-    let cmd = ['npm', 'install', '--save', argv.name];
-    me.spawn.spawnShellCommandAsync(cmd, {cwd: prefix},
+    const prefix = path.resolve(__dirname, '../..');
+    const cmd = ['npm', 'install', '--save', '--prefix', `${prefix}`, argv.name];
+    me.spawn.spawnShellCommandAsync(cmd, null,
       (err: Error, result: string) => {
         me.commandUtil.stdoutWrite(result);
       },
