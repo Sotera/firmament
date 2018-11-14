@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4bf86cfd-93d6-4c49-bd41-72518b46a432" name="Default" comment="v.1.3.15 -&gt; NPM &amp; Rework npm call">
-      <change afterPath="$PROJECT_DIR$/.tar-packignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ts/implementations/PackageImpl.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ts/implementations/commands/package-command-impl.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ts/interfaces/Package.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/jreeme.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/jreeme.xml" afterDir="false" />
+    <list default="true" id="4bf86cfd-93d6-4c49-bd41-72518b46a432" name="Default" comment="v.1.3.16 -&gt; NPM &amp; Add package to tar support">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ts/firmament.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ts/firmament.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ts/implementations/commands/module-management-command-impl.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ts/implementations/commands/module-management-command-impl.ts" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />
@@ -29,23 +21,23 @@
     <session id="529857377">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="2" />
-          <entry key="project.open.time.0" value="4" />
-          <entry key="project.opened" value="4" />
+          <entry key="project.closed" value="3" />
+          <entry key="project.open.time.0" value="5" />
+          <entry key="project.opened" value="5" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="json" value="72" />
+          <entry key="json" value="87" />
           <entry key="tar-packignore" value="38" />
           <entry key="ts" value="1317" />
-          <entry key="txt" value="35" />
+          <entry key="txt" value="62" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="72" />
-          <entry key="PLAIN_TEXT" value="73" />
+          <entry key="JSON" value="87" />
+          <entry key="PLAIN_TEXT" value="100" />
           <entry key="TypeScript" value="1317" />
         </counts>
       </usages-collector>
@@ -56,6 +48,7 @@
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
+          <entry key="JSON" value="2" />
           <entry key="PLAIN_TEXT" value="2" />
           <entry key="TypeScript" value="15" />
         </counts>
@@ -63,6 +56,7 @@
       <usages-collector id="statistics.vcs.git.usages" />
       <usages-collector id="statistics.file.extensions.open">
         <counts>
+          <entry key="json" value="2" />
           <entry key="tar-packignore" value="2" />
           <entry key="ts" value="15" />
         </counts>
@@ -73,77 +67,17 @@
     <favorites_list name="firmament" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.5">
-      <split-first>
-        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/ts/implementations/PackageImpl.ts">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="300">
-                  <caret line="20" selection-start-line="20" selection-end-line="20" />
-                  <folding>
-                    <element signature="e#0#45#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/.tar-packignore">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="15">
-                  <caret line="1" column="16" selection-start-line="1" selection-start-column="16" selection-end-line="1" selection-end-column="16" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/ts/firmament.ts">
-              <provider selected="true" editor-type-id="text-editor">
-                <state>
-                  <folding>
-                    <element signature="e#20#46#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-        </leaf>
-      </split-first>
-      <split-second>
-        <splitter split-orientation="vertical" split-proportion="0.5">
-          <split-first>
-            <leaf>
-              <file pinned="false" current-in-tab="true">
-                <entry file="file://$PROJECT_DIR$/ts/interfaces/Package.ts">
-                  <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="45">
-                      <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
-                    </state>
-                  </provider>
-                </entry>
-              </file>
-            </leaf>
-          </split-first>
-          <split-second>
-            <leaf>
-              <file pinned="false" current-in-tab="true">
-                <entry file="file://$PROJECT_DIR$/ts/implementations/commands/package-command-impl.ts">
-                  <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="161">
-                      <caret line="36" column="52" selection-start-line="36" selection-start-column="52" selection-end-line="36" selection-end-column="52" />
-                      <folding>
-                        <element signature="e#0#45#0" expanded="true" />
-                      </folding>
-                    </state>
-                  </provider>
-                </entry>
-              </file>
-            </leaf>
-          </split-second>
-        </splitter>
-      </split-second>
-    </splitter>
+    <leaf>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/package.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="30">
+              <caret line="2" column="19" selection-start-line="2" selection-start-column="19" selection-end-line="2" selection-end-column="19" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -168,7 +102,6 @@
         <option value="$PROJECT_DIR$/ts/interfaces/ModuleManagement.ts" />
         <option value="$PROJECT_DIR$/../firmament-yargs/ts/implementations/progress-bar-impl.ts" />
         <option value="$PROJECT_DIR$/ts/tsconfig.json" />
-        <option value="$PROJECT_DIR$/package.json" />
         <option value="$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts" />
         <option value="$PROJECT_DIR$/ts/implementations/commands/module-management-command-impl.ts" />
         <option value="$PROJECT_DIR$/ts/interfaces/Package.ts" />
@@ -176,6 +109,7 @@
         <option value="$PROJECT_DIR$/ts/implementations/commands/package-command-impl.ts" />
         <option value="$PROJECT_DIR$/.tar-packignore" />
         <option value="$PROJECT_DIR$/ts/implementations/PackageImpl.ts" />
+        <option value="$PROJECT_DIR$/package.json" />
       </list>
     </option>
   </component>
@@ -191,9 +125,6 @@
     <order>
       <scope name="ts-folder" />
     </order>
-  </component>
-  <component name="NodeModulesDirectoryManager">
-    <handled-path value="$PROJECT_DIR$/node_modules" />
   </component>
   <component name="NodePackageJsonFileManager">
     <packageJsonPaths>
@@ -216,7 +147,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -228,6 +158,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -362,7 +293,8 @@
       <workItem from="1541426860235" duration="770000" />
       <workItem from="1541704643758" duration="23000" />
       <workItem from="1541707972681" duration="2729000" />
-      <workItem from="1541767646324" duration="5664000" />
+      <workItem from="1541767646324" duration="6042000" />
+      <workItem from="1542228595725" duration="944000" />
     </task>
     <task id="LOCAL-00002" summary="Blast js directory">
       <created>1479832314807</created>
@@ -490,29 +422,36 @@
       <option name="project" value="LOCAL" />
       <updated>1541767767904</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="v.1.3.16 -&gt; NPM &amp; Add package to tar support">
+      <created>1541774391783</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1541774391783</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="45067000" />
+    <option name="totallyTimeSpent" value="46389000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1919" y="0" width="1922" height="1053" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.465625" visible="true" weight="0.19103523" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.465625" visible="true" weight="0.19316968" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="npm" order="2" sideWeight="0.5335413" side_tool="true" weight="0.13825858" />
       <window_info id="Favorites" order="3" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32045928" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32938644" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.29139784" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.29139784" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="TypeScript" order="7" sideWeight="0.49710068" weight="0.30430108" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49815497" weight="0.30322582" />
+      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49815497" visible="true" weight="0.30322582" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5028993" side_tool="true" weight="0.3279743" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.33690986" />
       <window_info anchor="bottom" id="Inspection Results" order="11" weight="0.3290461" />
@@ -578,7 +517,8 @@
     <MESSAGE value="v.1.3.13 -&gt; NPM &amp; Get rid of package-lock.json" />
     <MESSAGE value="v.1.3.14 -&gt; NPM &amp; Rework npm call" />
     <MESSAGE value="v.1.3.15 -&gt; NPM &amp; Rework npm call" />
-    <option name="LAST_COMMIT_MESSAGE" value="v.1.3.15 -&gt; NPM &amp; Rework npm call" />
+    <MESSAGE value="v.1.3.16 -&gt; NPM &amp; Add package to tar support" />
+    <option name="LAST_COMMIT_MESSAGE" value="v.1.3.16 -&gt; NPM &amp; Add package to tar support" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -656,13 +596,6 @@
     <entry file="file://$PROJECT_DIR$/_install_node.sh">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/package.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="30">
-          <caret line="2" column="19" selection-start-line="2" selection-start-column="19" selection-end-line="2" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ts/custom-typings.d.ts">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="30">
@@ -684,15 +617,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ts/firmament.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#20#46#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ts/implementations/ModuleManagementImpl.ts">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="29">
@@ -700,20 +624,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ts/implementations/commands/package-command-impl.ts">
+    <entry file="file://$PROJECT_DIR$/ts/implementations/PackageImpl.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="36" column="52" selection-start-line="36" selection-start-column="52" selection-end-line="36" selection-end-column="52" />
-          <folding>
-            <element signature="e#0#45#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ts/interfaces/Package.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+        <state relative-caret-position="300">
+          <caret line="20" selection-start-line="20" selection-end-line="20" />
         </state>
       </provider>
     </entry>
@@ -724,13 +638,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ts/implementations/PackageImpl.ts">
+    <entry file="file://$PROJECT_DIR$/ts/firmament.ts">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ts/interfaces/Package.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" selection-start-line="20" selection-end-line="20" />
-          <folding>
-            <element signature="e#0#45#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="45">
+          <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ts/implementations/commands/package-command-impl.ts">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="369">
+          <caret line="36" column="52" selection-start-line="36" selection-start-column="52" selection-end-line="36" selection-end-column="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/package.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="30">
+          <caret line="2" column="19" selection-start-line="2" selection-start-column="19" selection-end-line="2" selection-end-column="19" />
         </state>
       </provider>
     </entry>
