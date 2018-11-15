@@ -27,15 +27,13 @@ export class ModuleManagementImpl implements ModuleManagement {
     const prefix = path.resolve(__dirname, '../..');
     const cmd = ['npm', 'install', '--save', '--prefix', `${prefix}`, argv.name];
     me.spawn.spawnShellCommandAsync(cmd, null,
-      (err: Error, result: string) => {
-        me.commandUtil.stdoutWrite(result);
+      () => {
       },
       (err: Error) => {
         if(err) {
           //Assume the error was permission related and retry under 'sudo'
           me.spawn.sudoSpawnAsync(cmd, null,
-            (err: Error, result: string) => {
-              me.commandUtil.stdoutWrite(result);
+            () => {
             },
             (err: Error) => {
               if(err) {
