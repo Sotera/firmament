@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="TypeScriptCompiler">
-    <option name="isCompilerEnabled" value="true" />
+    <option name="enableServiceForProjectsWithoutConfig" value="false" />
+    <option name="recompileOnChanges" value="true" />
     <option name="scopeName" value="ts-folder" />
-    <option name="useConfig" value="true" />
     <option name="showAllErrors" value="true" />
   </component>
 </project>
