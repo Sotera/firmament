@@ -32,11 +32,11 @@
     "@types/reflect-metadata": "0.0.5",
     "chai": "^4.1.1",
     "mocha": "^3.5.0",
-    "typescript": "^2.4.2"
+    "typescript": "^3.1.6"
   },
   "dependencies": {
-    "firmament-yargs": "^1.1.16",
-    "inversify": "^4.13.0",
+    "firmament-yargs": "^1.1.19",
+    "inversify": "^5.0.1",
     "lodash": "^4.17.4",
     "reflect-metadata": "^0.1.10",
     "tar-pack": "^3.4.1"

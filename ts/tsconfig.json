@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,
@@ -16,12 +16,8 @@
       "es6",
       "dom"
     ],
-    "types": [
-      "chai",
-      "inversify",
-      "mocha",
-      "node",
-      "reflect-metadata"
+    "typeRoots": [
+      "node_modules/@types"
     ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
